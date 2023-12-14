@@ -51,7 +51,7 @@ videosRouter.post('/', (req: RequestWithBody<CreateVideo>, res: Response) => {
 
   validateVideoFields(title, author, errors)
 
-  if (availableResolution && Array.isArray(availableResolution)) {
+  if (Array.isArray(availableResolution)) {
     availableResolution.forEach((resolution) => !Object.values(AvailableResolution).includes(resolution) && errors.errorMessages.push({
       message: 'Invalid availableResolution',
       field: 'availableResolution'
