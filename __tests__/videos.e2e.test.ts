@@ -1,6 +1,6 @@
 import request from 'supertest'
 import { app } from '../src/settings'
-import { AvailableResolution, CreateVideo, VideoDb } from '../src/types/videos'
+import { AvailableResolutions, CreateVideo, VideoDb } from '../src/types/videos'
 import { HttpStatus } from '../src/utils'
 import { Routes } from '../src/routes/routes'
 
@@ -25,7 +25,7 @@ describe('/videos', () => {
       .post(Routes.videos)
       .send({ title: '', author: '' })
       .expect(HttpStatus.BAD_REQUEST, {
-        errorMessages: [
+        errorsMessages: [
           { message: 'Invalid title', field: 'title' },
           { message: 'Invalid author', field: 'author' },
         ],
@@ -39,7 +39,7 @@ describe('/videos', () => {
     const createVideoData = {
       title: 'Best video',
       author: 'Alex',
-      availableResolution: [AvailableResolution.P144]
+      availableResolutions: [AvailableResolutions.P144]
     } as CreateVideo
 
     const response = await request(app)
@@ -88,7 +88,7 @@ describe('/videos', () => {
       title: 'hello title',
       author: 'hello author',
       publicationDate: '2023-01-12T08:12:39.261Z',
-      availableResolution: [],
+      availableResolutions: [],
     })
     newVideo = res.body[0]
   })

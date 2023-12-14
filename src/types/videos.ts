@@ -1,4 +1,4 @@
-export enum AvailableResolution {
+export enum AvailableResolutions {
   P144 = 'P144',
   P240 = 'P240',
   P360 = 'P360',
@@ -17,19 +17,19 @@ export type VideoDb = {
   minAgeRestriction: number | null;
   createdAt: string;
   publicationDate: string;
-  availableResolution: AvailableResolution[];
+  availableResolutions: AvailableResolutions[];
 }
 
 export type CreateVideo = {
   title: string;
   author: string;
-  availableResolution: AvailableResolution[];
+  availableResolutions: AvailableResolutions[];
 }
 
 export type UpdateVideo = {
   title: string;
   author: string;
-  availableResolution: AvailableResolution[];
+  availableResolutions: AvailableResolutions[];
   canBeDownloaded: boolean;
   minAgeRestriction: number | null;
   publicationDate: string;

@@ -1,31 +1,21 @@
 import { Request, Response, Router } from 'express'
-import { AvailableResolution, CreateVideo, UpdateVideo, VideoDb } from '../types/videos'
+import { AvailableResolutions, CreateVideo, UpdateVideo, VideoDb } from '../types/videos'
 import { RequestWithBody, RequestWithParams, Error, RequestWithBodyAndParams } from '../types/common'
 import { HttpStatus, isValidString } from '../utils'
 
-export const videos: VideoDb[] = [
-  {
-    id: 0,
-    title: 'string',
-    author: 'string',
-    canBeDownloaded: true,
-    minAgeRestriction: null,
-    createdAt: '2023-12-04T16:26:14:200Z',
-    publicationDate: '2023-12-04T16:26:14:200Z',
-    availableResolution: [
-      AvailableResolution.P144
-    ],
-  }
-]
+const TITLE_MAX_LENGTH = 40;
+const AUTHOR_MAX_LENGTH = 20;
+
+export const videos: VideoDb[] = []
 export const videosRouter = Router({})
 
 const validateVideoFields = (title: string, author: string, errors: Error) => {
-  if (!isValidString(title, 40)) {
-    errors.errorMessages.push({ message: 'Invalid title', field: 'title' })
+  if (!isValidString(title, TITLE_MAX_LENGTH)) {
+    errors.errorsMessages.push({ message: 'Invalid title', field: 'title' })
   }
 
-  if (!isValidString(author, 20)) {
-    errors.errorMessages.push({ message: 'Invalid author', field: 'author' })
+  if (!isValidString(author, AUTHOR_MAX_LENGTH)) {
+    errors.errorsMessages.push({ message: 'Invalid author', field: 'author' })
   }
 }
 
@@ -44,23 +34,23 @@ videosRouter.get('/:id', (req: RequestWithParams<{ id: string }>, res: Response)
 })
 videosRouter.post('/', (req: RequestWithBody<CreateVideo>, res: Response) => {
   let errors: Error = {
-    errorMessages: []
+    errorsMessages: []
   }
 
-  let { title, author, availableResolution } = req.body
+  let { title, author, availableResolutions } = req.body
 
   validateVideoFields(title, author, errors)
 
-  if (Array.isArray(availableResolution)) {
-    availableResolution.forEach((resolution) => !Object.values(AvailableResolution).includes(resolution) && errors.errorMessages.push({
-      message: 'Invalid availableResolution',
-      field: 'availableResolution'
+  if (Array.isArray(availableResolutions)) {
+    availableResolutions.forEach((resolution) => !Object.values(AvailableResolutions).includes(resolution) && errors.errorsMessages.push({
+      message: 'Invalid availableResolutions',
+      field: 'availableResolutions'
     }))
   } else {
-    availableResolution = []
+    availableResolutions = []
   }
 
-  if (errors.errorMessages.length) {
+  if (errors.errorsMessages.length) {
     res.status(HttpStatus.BAD_REQUEST).send(errors)
     return
   }
@@ -76,9 +66,9 @@ videosRouter.post('/', (req: RequestWithBody<CreateVideo>, res: Response) => {
     minAgeRestriction: null,
     createdAt: createdAt.toISOString(),
     publicationDate: publicationDate.toISOString(),
-    title,
-    author,
-    availableResolution
+    title: title.trim(),
+    author: author.trim(),
+    availableResolutions
   }
 
   videos.push(newVideo)
@@ -86,28 +76,31 @@ videosRouter.post('/', (req: RequestWithBody<CreateVideo>, res: Response) => {
 })
 videosRouter.put('/:id', (req: RequestWithBodyAndParams<{ id: string }, UpdateVideo>, res: Response) => {
   let errors: Error = {
-    errorMessages: []
+    errorsMessages: []
   }
 
-  let { title, author, availableResolution, canBeDownloaded, minAgeRestriction, publicationDate } = req.body
+  let { title, author, availableResolutions, canBeDownloaded, minAgeRestriction, publicationDate } = req.body
 
   validateVideoFields(title, author, errors)
 
-  if (Array.isArray(availableResolution)) {
-    availableResolution.forEach((resolution) => !Object.values(AvailableResolution).includes(resolution) && errors.errorMessages.push({
-      message: 'Invalid availableResolution',
-      field: 'availableResolution'
+  if (Array.isArray(availableResolutions)) {
+    availableResolutions.forEach((resolution) => !Object.values(AvailableResolutions).includes(resolution) && errors.errorsMessages.push({
+      message: 'Invalid availableResolutions',
+      field: 'availableResolutions'
     }))
   } else {
-    availableResolution = []
+    availableResolutions = []
   }
 
   if (typeof canBeDownloaded !== 'boolean') {
-    canBeDownloaded = false
+    errors.errorsMessages.push({
+      message: 'Invalid canBeDownloaded',
+      field: 'canBeDownloaded'
+    })
   }
 
   if (typeof minAgeRestriction === 'number') {
-    minAgeRestriction < 1 || minAgeRestriction > 18 && errors.errorMessages.push({
+    minAgeRestriction < 1 || minAgeRestriction > 18 && errors.errorsMessages.push({
       message: 'Invalid minAgeRestriction',
       field: 'minAgeRestriction'
     })
@@ -115,7 +108,17 @@ videosRouter.put('/:id', (req: RequestWithBodyAndParams<{ id: string }, UpdateVi
     minAgeRestriction = null
   }
 
-  if (errors.errorMessages.length) {
+  if (publicationDate) {
+    const parsedDate = Date.parse(publicationDate)
+    if (isNaN(parsedDate) || new Date(parsedDate).toISOString() !== publicationDate) {
+      errors.errorsMessages.push({
+        message: 'Invalid publicationDate',
+        field: 'publicationDate'
+      })
+    }
+  }
+
+  if (errors.errorsMessages.length) {
     res.status(HttpStatus.BAD_REQUEST).send(errors)
     return
   }
@@ -132,9 +135,9 @@ videosRouter.put('/:id', (req: RequestWithBodyAndParams<{ id: string }, UpdateVi
     ...video,
     canBeDownloaded,
     minAgeRestriction,
-    title,
-    author,
-    availableResolution,
+    title: title.trim(),
+    author: author.trim(),
+    availableResolutions,
     publicationDate: publicationDate ?? video.publicationDate,
   }
 

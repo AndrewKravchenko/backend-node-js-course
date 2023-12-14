@@ -9,5 +9,5 @@ export type ErrorMessage = {
   field: string
 }
 export type Error = {
-  errorMessages: ErrorMessage[]
+  errorsMessages: ErrorMessage[]
 }
