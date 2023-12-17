@@ -1,13 +1,13 @@
 import request from 'supertest'
 import { app } from '../src/settings'
-import { AvailableResolutions, CreateVideo, VideoDb } from '../src/types/videos'
 import { HttpStatus } from '../src/utils'
 import { Routes } from '../src/routes/routes'
-
+import { Video } from '../src/models/videos/output'
+import { AvailableResolutions, CreateVideo } from '../src/models/videos/input'
 
 describe('/videos', () => {
   const incorrectId = 876328
-  let newVideo: VideoDb | null = null
+  let newVideo: Video | null = null
 
   beforeAll(async () => {
     await request(app).delete(`${Routes.testing}/all-data`).expect(HttpStatus.NO_CONTENT)
@@ -64,9 +64,9 @@ describe('/videos', () => {
 
   it('PUT video by ID with incorrect data should return 404', async () => {
     await request(app)
-      .put(`${Routes.videos}/${incorrectId}`)
+      .put(`${Routes.videos}/${newVideo!.id}`)
       .send({ title: 'title', author: 'title' })
-      .expect(HttpStatus.NOT_FOUND)
+      .expect(HttpStatus.BAD_REQUEST)
 
     const res = await request(app).get(Routes.videos)
     expect(res.body[0]).toEqual(newVideo)
@@ -79,6 +79,7 @@ describe('/videos', () => {
         title: 'hello title',
         author: 'hello author',
         publicationDate: '2023-01-12T08:12:39.261Z',
+        canBeDownloaded: false,
       })
       .expect(HttpStatus.NO_CONTENT)
 

@@ -9,17 +9,6 @@ export enum AvailableResolutions {
   P2160 = 'P2160',
 }
 
-export type VideoDb = {
-  id: number;
-  title: string;
-  author: string;
-  canBeDownloaded: boolean;
-  minAgeRestriction: number | null;
-  createdAt: string;
-  publicationDate: string;
-  availableResolutions: AvailableResolutions[];
-}
-
 export type CreateVideo = {
   title: string;
   author: string;

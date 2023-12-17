@@ -1,12 +1,13 @@
 import { Request, Response, Router } from 'express'
-import { AvailableResolutions, CreateVideo, UpdateVideo, VideoDb } from '../types/videos'
-import { RequestWithBody, RequestWithParams, Error, RequestWithBodyAndParams } from '../types/common'
+import { RequestWithBody, RequestWithParams, Error, RequestWithBodyAndParams } from '../models/common'
 import { HttpStatus, isValidString } from '../utils'
+import { Video } from '../models/videos/output'
+import { AvailableResolutions, CreateVideo, UpdateVideo } from '../models/videos/input'
+import { db } from '../db/db'
 
 const TITLE_MAX_LENGTH = 40;
 const AUTHOR_MAX_LENGTH = 20;
 
-export const videos: VideoDb[] = []
 export const videosRouter = Router({})
 
 const validateVideoFields = (title: string, author: string, errors: Error) => {
@@ -20,10 +21,10 @@ const validateVideoFields = (title: string, author: string, errors: Error) => {
 }
 
 videosRouter.get('/', (req: Request, res: Response) => {
-  res.send(videos)
+  res.send(db.videos)
 })
 videosRouter.get('/:id', (req: RequestWithParams<{ id: string }>, res: Response) => {
-  const video = videos.find((video) => video.id === +req.params.id)
+  const video = db.videos.find((video) => video.id === +req.params.id)
 
   if (!video) {
     res.sendStatus(HttpStatus.NOT_FOUND)
@@ -60,7 +61,7 @@ videosRouter.post('/', (req: RequestWithBody<CreateVideo>, res: Response) => {
 
   publicationDate.setDate(createdAt.getDate() + 1)
 
-  const newVideo: VideoDb = {
+  const newVideo: Video = {
     id: +(new Date()),
     canBeDownloaded: false,
     minAgeRestriction: null,
@@ -71,10 +72,10 @@ videosRouter.post('/', (req: RequestWithBody<CreateVideo>, res: Response) => {
     availableResolutions
   }
 
-  videos.push(newVideo)
+  db.videos.push(newVideo)
   res.status(HttpStatus.CREATED).send(newVideo)
 })
-videosRouter.put('/:id', (req: RequestWithBodyAndParams<{ id: string }, UpdateVideo>, res: Response) => {
+videosRouter.put('/:id', (req: RequestWithBodyAndParams<UpdateVideo>, res: Response) => {
   let errors: Error = {
     errorsMessages: []
   }
@@ -123,15 +124,15 @@ videosRouter.put('/:id', (req: RequestWithBodyAndParams<{ id: string }, UpdateVi
     return
   }
 
-  const videoIndex = videos.findIndex((video) => video.id === +req.params.id)
+  const videoIndex = db.videos.findIndex((video) => video.id === +req.params.id)
 
   if (videoIndex === -1) {
     res.sendStatus(HttpStatus.NOT_FOUND)
     return
   }
 
-  const video = videos[videoIndex]
-  const updatedVideo: VideoDb = {
+  const video = db.videos[videoIndex]
+  const updatedVideo: Video = {
     ...video,
     canBeDownloaded,
     minAgeRestriction,
@@ -141,10 +142,11 @@ videosRouter.put('/:id', (req: RequestWithBodyAndParams<{ id: string }, UpdateVi
     publicationDate: publicationDate ?? video.publicationDate,
   }
 
-  videos.splice(videoIndex, 1, updatedVideo)
+  db.videos.splice(videoIndex, 1, updatedVideo)
   res.sendStatus(HttpStatus.NO_CONTENT)
 })
 videosRouter.delete('/:id', (req: Request, res: Response) => {
+  const videos = db.videos
   for (let i = 0; i < videos.length; i++) {
     if (videos[i].id === +req.params.id) {
       videos.splice(i, 1)
