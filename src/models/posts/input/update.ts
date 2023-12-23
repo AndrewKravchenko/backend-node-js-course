@@ -1,8 +1,6 @@
-export type Post = {
-  id: string,
+export type UpdatePost = {
   title: string,
   shortDescription: string,
   content: string,
   blogId: string,
-  blogName: string,
 }

@@ -5,9 +5,7 @@ export type CreatePost = {
   blogId: string,
 }
 
-export type UpdatePost = {
-  title: string,
-  shortDescription: string,
-  content: string,
-  blogId: string,
+export type ExtendedCreatePost = CreatePost & {
+  createdAt: string,
+  blogName: string,
 }

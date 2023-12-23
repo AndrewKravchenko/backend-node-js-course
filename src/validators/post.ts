@@ -14,8 +14,8 @@ const contentValidation = body('content').isString().trim().isLength({
   min: 1,
   max: 1000
 }).withMessage('Incorrect content!')
-const blogIdValidation = body('blogId').isString().trim().custom((value) => {
-  const blog = BlogRepository.getBlogById(value)
+const blogIdValidation = body('blogId').isString().trim().custom(async (value) => {
+  const blog = await BlogRepository.getBlogById(value)
 
   if (!blog) {
     throw Error('Incorrect blogId!')

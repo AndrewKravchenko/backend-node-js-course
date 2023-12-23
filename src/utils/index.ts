@@ -1,7 +1,3 @@
-export const isValidString = (value: any, maxLength: number) => {
-  return typeof value === 'string' && value.trim() && value.trim().length <= maxLength
-}
-
 export const HttpStatus = {
   OK: 200,
   CREATED: 201,

@@ -1,9 +1,24 @@
-import { Blog } from '../blogs/output'
-import { Post } from '../posts/output'
-import { Video } from '../videos/output'
+import { OutputBlog } from '../blogs/output/output'
+import { OutputPost } from '../posts/output/output'
 
 export type DB = {
-  videos: Video[],
-  blogs: Blog[],
-  posts: Post[],
+  blogs: OutputBlog[],
+  posts: OutputPost[],
+}
+
+export type BlogDB = {
+  name: string,
+  description: string,
+  websiteUrl: string,
+  createdAt: string,
+  isMembership: boolean,
+}
+
+export type PostDB = {
+  title: string,
+  shortDescription: string,
+  content: string,
+  blogId: string,
+  blogName: string,
+  createdAt: string,
 }

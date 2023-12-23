@@ -5,6 +5,7 @@
 *.pdf
 *.psd
 *.json
+!/.env.dev
 *.node_modules/
 build/
 pdf/
