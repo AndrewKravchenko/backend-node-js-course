@@ -1,18 +1,27 @@
-import { Request, Response, Router } from 'express'
+import { Response, Router } from 'express'
 import { PostRepository } from '../repositories/post'
-import { HttpStatus } from '../utils'
-import { RequestWithBody, RequestWithBodyAndParams, RequestWithParams } from '../models/common'
+import { HttpStatus } from '../../constants/httpStatus'
+import { RequestWithBody, RequestWithBodyAndParams, RequestWithParams, RequestWithQuery } from '../models/common'
 import { authMiddleware } from '../middlewares/auth/auth'
 import { BlogRepository } from '../repositories/blog'
 import { postValidation } from '../validators/post'
 import { CreatePost, ExtendedCreatePost } from '../models/posts/input/create'
 import { UpdatePost } from '../models/posts/input/update'
 import { ObjectId } from 'mongodb'
+import { QueryPost } from '../models/posts/input/query'
 
 export const postsRouter = Router({})
 
-postsRouter.get('/', async (req: Request, res: Response) => {
-  const posts = await PostRepository.getAllPosts()
+postsRouter.get('/', async (req: RequestWithQuery<QueryPost>, res: Response) => {
+  const { pageSize, pageNumber, sortDirection, sortBy} = req.query
+  const sortData = {
+    sortBy,
+    sortDirection,
+    pageNumber,
+    pageSize,
+  }
+
+  const posts = await PostRepository.getAllPosts(sortData)
 
   res.send(posts)
 })
@@ -53,8 +62,13 @@ postsRouter.post('/', authMiddleware, postValidation(), async (req: RequestWithB
     createdAt: new Date().toISOString()
   }
 
-  const postId = await PostRepository.createPost(newPost)
-  const createdPost = await PostRepository.getPostById(postId)
+  const createdPostId = await PostRepository.createPost(newPost)
+  const createdPost = await PostRepository.getPostById(createdPostId)
+
+  if (!createdPostId) {
+    res.sendStatus(HttpStatus.NOT_FOUND)
+    return
+  }
 
   res.status(HttpStatus.CREATED).send(createdPost)
 })

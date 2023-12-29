@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import request from 'supertest'
 import { app } from '../src/settings'
-import { HttpStatus } from '../src/utils'
+import { HttpStatus } from '../constants/httpStatus'
 import { MongoClient } from 'mongodb'
 import { paths } from '../src/routes/paths'
 import { CreateBlog } from '../src/models/blogs/input/create'
@@ -15,9 +15,17 @@ const authPassword = process.env.AUTH_PASSWORD || ''
 const dbName = 'blogs'
 const mongoURI = process.env.MONGO_URI || `mongodb://0.0.0.0:27017/${dbName}`
 
+const incorrectId = 876328
+let newBlog: OutputBlog | null = null
+const emptyResponse = {
+  pagesCount: 0,
+  page: 1,
+  pageSize: 10,
+  totalCount: 0,
+  items: []
+}
+
 describe('/blogs', () => {
-  const incorrectId = 876328
-  let newBlog: OutputBlog | null = null
   const client = new MongoClient(mongoURI)
 
   beforeAll(async () => {
@@ -30,7 +38,7 @@ describe('/blogs', () => {
   })
 
   it('GET blogs = []', async () => {
-    await request(app).get(defaultRoute).expect(200, [])
+    await request(app).get(defaultRoute).expect(200, emptyResponse)
   })
 
   it('POST should not create the blog with empty fields', async function () {
@@ -49,7 +57,7 @@ describe('/blogs', () => {
       })
 
     const res = await request(app).get(defaultRoute)
-    expect(res.body).toEqual([])
+    expect(res.body).toEqual(emptyResponse)
   })
 
   it('POST should not create the blog without authentication', async function () {
@@ -65,7 +73,7 @@ describe('/blogs', () => {
       .expect(HttpStatus.UNAUTHORIZED)
 
     const res = await request(app).get(defaultRoute)
-    expect(res.body).toEqual([])
+    expect(res.body).toEqual(emptyResponse)
   })
 
   it('POST should create the blog with correct data)', async function () {
@@ -83,7 +91,43 @@ describe('/blogs', () => {
 
     newBlog = response.body
 
-    await request(app).get(defaultRoute).expect([newBlog])
+    await request(app).get(defaultRoute).expect(
+      {
+        pagesCount: 1,
+        page: 1,
+        pageSize: 10,
+        totalCount: 1,
+        items: [newBlog]
+      }
+    )
+  })
+
+  it('POST should create the post to blog with correct data)', async function () {
+    const post = {
+      title: 'Test Post',
+      shortDescription: 'This is a test post',
+      content: 'some content',
+    }
+
+    await request(app)
+      .post(`${defaultRoute}/${newBlog!.id}/posts`)
+      .auth(authLogin, authPassword)
+      .send(post)
+      .expect(HttpStatus.CREATED)
+  })
+
+  it('GET /blogs/:id/posts should return posts for a valid blog ID', async () => {
+    const response = await request(app)
+      .get(`${defaultRoute}/${newBlog!.id}/posts`)
+      .query({ sortBy: 'createdAt', sortDirection: 'desc', pageNumber: 1, pageSize: 10 })
+
+    expect(response.status).toBe(200)
+  })
+
+  it('GET /blogs/:id/posts should return 404 for an invalid blog ID', async () => {
+    const response = await request(app).get(`${defaultRoute}/${incorrectId}/posts`)
+
+    expect(response.status).toBe(404)
   })
 
   it('GET blog by ID with incorrect id should return 404', async () => {
@@ -109,8 +153,8 @@ describe('/blogs', () => {
       .send(blog)
       .expect(HttpStatus.BAD_REQUEST)
 
-    const res = await request(app).get(defaultRoute)
-    expect(res.body[0]).toEqual(newBlog)
+    const { body } = await request(app).get(`${defaultRoute}/${newBlog!.id}`)
+    expect(body).toEqual(newBlog)
   })
 
   it('PUT should not update the blog without authentication', async function () {
@@ -137,12 +181,12 @@ describe('/blogs', () => {
       .send(blog)
       .expect(HttpStatus.NO_CONTENT)
 
-    const res = await request(app).get(defaultRoute)
-    expect(res.body[0]).toEqual({
+    const { body } = await request(app).get(`${defaultRoute}/${newBlog!.id}`)
+    expect(body).toEqual({
       ...newBlog,
       ...blog,
     })
-    newBlog = res.body[0]
+    newBlog = body
   })
 
   it('DELETE blog by incorrect ID should return 404', async () => {
@@ -151,8 +195,8 @@ describe('/blogs', () => {
       .auth(authLogin, authPassword)
       .expect(HttpStatus.NOT_FOUND)
 
-    const res = await request(app).get(defaultRoute)
-    expect(res.body[0]).toEqual(newBlog)
+    const { body } = await request(app).get(defaultRoute)
+    expect(body.items[0]).toEqual(newBlog)
   })
 
   it('DELETE should not delete the blog without authentication', async function () {
@@ -167,7 +211,7 @@ describe('/blogs', () => {
       .auth(authLogin, authPassword)
       .expect(HttpStatus.NO_CONTENT)
 
-    const res = await request(app).get(defaultRoute)
-    expect(res.body.length).toBe(0)
+    const { body } = await request(app).get(defaultRoute)
+    expect(body.totalCount).toBe(0)
   })
 })

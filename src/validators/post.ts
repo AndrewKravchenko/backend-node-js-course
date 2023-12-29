@@ -25,3 +25,4 @@ const blogIdValidation = body('blogId').isString().trim().custom(async (value) =
 }).withMessage('Incorrect blogId!')
 
 export const postValidation = () => [titleValidation, shortDescriptionValidation, contentValidation, blogIdValidation, inputValidation]
+export const postToBlogValidation = () => [titleValidation, shortDescriptionValidation, contentValidation, inputValidation]

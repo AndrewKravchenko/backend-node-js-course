@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
-import { HttpStatus } from '../../utils'
+import { HttpStatus } from '../../../constants/httpStatus'
 
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
   const auth = req.headers['authorization']

@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express'
 import { validationResult } from 'express-validator'
-import { HttpStatus } from '../../utils'
+import { HttpStatus } from '../../../constants/httpStatus'
 
 export const inputValidation = (req: Request, res: Response, next: NextFunction) => {
   const formattedError = validationResult(req).formatWith((error) => {

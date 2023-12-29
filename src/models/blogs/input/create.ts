@@ -9,3 +9,8 @@ export type ExtendedCreateBlog = CreateBlog & {
   createdAt: string;
 }
 
+export type CreatePostToBlog = {
+  title: string,
+  shortDescription: string,
+  content: string,
+}

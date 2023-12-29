@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import request from 'supertest'
 import { app } from '../src/settings'
-import { HttpStatus } from '../src/utils'
+import { HttpStatus } from '../constants/httpStatus'
 import { MongoClient } from 'mongodb'
 import { paths } from '../src/routes/paths'
 import { CreateBlog } from '../src/models/blogs/input/create'
@@ -16,10 +16,19 @@ const authPassword = process.env.AUTH_PASSWORD || ''
 
 const dbName = 'posts'
 const mongoURI = process.env.MONGO_URI || `mongodb://0.0.0.0:27017/${dbName}`
+
+const incorrectId = 876328
+let newBlog: OutputBlog | null = null
+let newPost: OutputPost | null = null
+const emptyResponse = {
+  pagesCount: 0,
+  page: 1,
+  pageSize: 10,
+  totalCount: 0,
+  items: []
+}
+
 describe('/posts', () => {
-  const incorrectId = 876328
-  let newBlog: OutputBlog | null = null
-  let newPost: OutputPost | null = null
   const client = new MongoClient(mongoURI)
 
   beforeAll(async () => {
@@ -47,7 +56,7 @@ describe('/posts', () => {
   })
 
   it('GET posts = []', async () => {
-    await request(app).get(defaultRoute).expect(200, [])
+    await request(app).get(defaultRoute).expect(200, emptyResponse)
   })
 
   it('POST should not create the post with empty fields', async function () {
@@ -67,7 +76,7 @@ describe('/posts', () => {
       })
 
     const res = await request(app).get(defaultRoute)
-    expect(res.body).toEqual([])
+    expect(res.body).toEqual(emptyResponse)
   })
 
   it('POST should not create the post without authentication', async function () {
@@ -84,7 +93,7 @@ describe('/posts', () => {
       .expect(HttpStatus.UNAUTHORIZED)
 
     const res = await request(app).get(defaultRoute)
-    expect(res.body).toEqual([])
+    expect(res.body).toEqual(emptyResponse)
   })
 
   it('POST should create the post with correct data)', async function () {
@@ -103,7 +112,25 @@ describe('/posts', () => {
 
     newPost = response.body
 
-    await request(app).get(defaultRoute).expect([newPost])
+    await request(app).get(defaultRoute).expect({
+      pagesCount: 1,
+      page: 1,
+      pageSize: 10,
+      totalCount: 1,
+      items: [newPost]
+    })
+  })
+
+  it('GET all posts with query parameters', async () => {
+    await request(app)
+      .get(defaultRoute)
+      .query({
+        pageSize: 10,
+        pageNumber: 1,
+        sortDirection: 'asc',
+        sortBy: 'createdAt',
+      })
+      .expect(HttpStatus.OK)
   })
 
   it('GET post by ID with incorrect id should return 404', async () => {
@@ -113,7 +140,6 @@ describe('/posts', () => {
   it('GET post by ID with correct id should return the post', async () => {
     await request(app)
       .get(`${defaultRoute}/${newPost!.id}`)
-
       .expect(HttpStatus.OK, newPost)
   })
 
@@ -130,8 +156,9 @@ describe('/posts', () => {
       .send(post)
       .expect(HttpStatus.BAD_REQUEST)
 
-    const res = await request(app).get(defaultRoute)
-    expect(res.body[0]).toEqual(newPost)
+    const { body } = await request(app).get(`${defaultRoute}/${newPost!.id}`)
+
+    expect(body).toEqual(newPost)
   })
 
   it('PUT should not update the post without authentication', async function () {
@@ -162,12 +189,12 @@ describe('/posts', () => {
       .send(post)
       .expect(HttpStatus.NO_CONTENT)
 
-    const res = await request(app).get(defaultRoute)
-    expect(res.body[0]).toEqual({
+    const { body } = await request(app).get(`${defaultRoute}/${newPost!.id}`)
+    expect(body).toEqual({
       ...newPost,
       ...post,
     })
-    newPost = res.body[0]
+    newPost = body
   })
 
   it('DELETE post by incorrect ID should return 404', async () => {
@@ -176,8 +203,8 @@ describe('/posts', () => {
       .auth(authLogin, authPassword)
       .expect(HttpStatus.NOT_FOUND)
 
-    const res = await request(app).get(defaultRoute)
-    expect(res.body[0]).toEqual(newPost)
+    const { body } = await request(app).get(defaultRoute)
+    expect(body.items[0]).toEqual(newPost)
   })
 
   it('DELETE should not delete the post without authentication', async function () {
@@ -192,7 +219,7 @@ describe('/posts', () => {
       .auth(authLogin, authPassword)
       .expect(HttpStatus.NO_CONTENT)
 
-    const res = await request(app).get(defaultRoute)
-    expect(res.body.length).toBe(0)
+    const { body } = await request(app).get(defaultRoute)
+    expect(body.items.length).toBe(0)
   })
 })

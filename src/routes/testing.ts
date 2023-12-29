@@ -1,5 +1,5 @@
 import { Request, Response, Router } from 'express'
-import { HttpStatus } from '../utils'
+import { HttpStatus } from '../../constants/httpStatus'
 import { blogCollection, postsCollection } from '../db/db'
 // import { database } from '../db/db'
 
