@@ -1,4 +1,4 @@
-import { blogCollection, postsCollection } from '../db/db'
+import { blogCollection, postCollection } from '../db/db'
 import { OutputBlog, OutputBlogs } from '../models/blogs/output/output'
 import { blogMapper } from '../models/blogs/mappers/mapper'
 import { ObjectId } from 'mongodb'
@@ -49,14 +49,14 @@ export class BlogRepository {
     const pageNumber = Number(sortData.pageNumber || 1)
     const pageSize = Number(sortData.pageSize || 10)
 
-    const posts = await postsCollection
+    const posts = await postCollection
       .find({ blogId })
       .sort(sortBy, sortDirection)
       .skip(paginationSkip(pageNumber, pageSize))
       .limit(pageSize)
       .toArray()
 
-    const totalCount = await postsCollection.countDocuments({ blogId })
+    const totalCount = await postCollection.countDocuments({ blogId })
     const pagesCount = Math.ceil(totalCount / pageSize)
 
       return {

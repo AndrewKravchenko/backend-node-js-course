@@ -1,9 +1,11 @@
 import { OutputBlog } from '../blogs/output/output'
 import { OutputPost } from '../posts/output/output'
+import { OutputUser } from '../users/output/output'
 
 export type DB = {
   blogs: OutputBlog[],
   posts: OutputPost[],
+  users: OutputUser[],
 }
 
 export type BlogDB = {
@@ -20,5 +22,14 @@ export type PostDB = {
   content: string,
   blogId: string,
   blogName: string,
+  createdAt: string,
+}
+
+export type UserDB = {
+  password: string,
+  passwordSalt: string,
+  login: string,
+  email: string,
+  isDeleted: boolean,
   createdAt: string,
 }
