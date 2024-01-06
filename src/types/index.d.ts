@@ -8,6 +8,12 @@ declare global {
       DB_NAME: string
     }
   }
+
+  namespace Express {
+    export interface Request {
+      userId: string | null
+    }
+  }
 }
 
 export {}

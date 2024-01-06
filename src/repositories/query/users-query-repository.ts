@@ -1,14 +1,12 @@
-import { userCollection } from '../db/db'
-import { paginationSkip } from '../utils/queryParams'
-import { QueryUsers } from '../models/users/input/query'
-import { OutputUser, OutputUsers } from '../models/users/output/output'
-import { userMapper } from '../models/users/mappers/mapper'
-import { ExtendedCreateUser } from '../models/users/input/create'
+import { userCollection } from '../../db/db'
 import { Filter, ObjectId, WithId } from 'mongodb'
-import { UserDB } from '../models/db/db'
+import { paginationSkip } from '../../utils/queryParams'
+import { UserDB } from '../../models/db/db'
+import { QueryUser } from '../../models/users/input/query'
+import { OutputUser, OutputUsers } from '../../models/users/output/output'
 
-export class UserRepository {
-  static async getAllUsers(sortData: QueryUsers): Promise<OutputUsers> {
+export class UsersQueryRepository {
+  static async getUsers(sortData: QueryUser): Promise<OutputUsers> {
     const sortBy = sortData.sortBy || 'createdAt'
     const sortDirection = sortData.sortDirection || 'desc'
     const pageNumber = Number(sortData.pageNumber || 1)
@@ -44,7 +42,7 @@ export class UserRepository {
       page: pageNumber,
       pageSize,
       totalCount,
-      items: users.map(userMapper)
+      items: users.map(this.mapDBUserToUserOutputModel)
     }
   }
 
@@ -55,10 +53,10 @@ export class UserRepository {
       return null
     }
 
-    return userMapper(user)
+    return this.mapDBUserToUserOutputModel(user)
   }
 
-  static async findByLoginOrEmail(loginOrEmail: string): Promise<WithId<UserDB> | null> {
+  static async findUserByLoginOrEmail(loginOrEmail: string): Promise<WithId<UserDB> | null> {
     return await userCollection.findOne({
       $or: [
         { login: { $regex: loginOrEmail, $options: 'i' } },
@@ -67,31 +65,12 @@ export class UserRepository {
     })
   }
 
-
-  static async isUserExists(login: string, email: string): Promise<boolean> {
-    const query: Filter<UserDB> = {
-      $or: [
-        { login: { $regex: login, $options: 'i' } },
-        { email: { $regex: email, $options: 'i' } }
-      ]
+  static mapDBUserToUserOutputModel(dbUser: WithId<UserDB>): OutputUser {
+    return {
+      id: dbUser._id.toString(),
+      login: dbUser.login,
+      email: dbUser.email,
+      createdAt: dbUser.createdAt,
     }
-
-    const existingUser = await userCollection.findOne(query)
-    return !!existingUser
-  }
-
-
-  static async createUser(newUser: ExtendedCreateUser): Promise<string> {
-    const { insertedId } = await userCollection.insertOne(newUser)
-
-    return insertedId.toString()
-  }
-
-  static async deleteUser(id: string): Promise<boolean> {
-    const result = await userCollection.updateOne({ _id: new ObjectId(id) }, {
-      $set: { isDeleted: true }
-    })
-
-    return !!result.matchedCount
   }
 }

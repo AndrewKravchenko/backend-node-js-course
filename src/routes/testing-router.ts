@@ -1,5 +1,5 @@
 import { Request, Response, Router } from 'express'
-import { HttpStatus } from '../../constants/httpStatus'
+import { HTTP_STATUS } from '../constants/httpStatus'
 import { blogCollection, postCollection, userCollection } from '../db/db'
 // import { database } from '../db/db'
 
@@ -12,5 +12,5 @@ deleteAllDataRoute.delete('/', async (req: Request, res: Response) => {
   await postCollection.deleteMany({})
   await userCollection.deleteMany({})
 
-  res.sendStatus(HttpStatus.NO_CONTENT)
+  res.sendStatus(HTTP_STATUS.NO_CONTENT)
 })

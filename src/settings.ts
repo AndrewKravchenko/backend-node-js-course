@@ -1,20 +1,20 @@
 import 'dotenv/config'
 import express from 'express'
-import { paths } from '../constants/paths'
+import { PATHS } from './constants/paths'
 import cors from 'cors'
-import { blogsRouter } from './routes/blog'
-import { postsRouter } from './routes/post'
-import { deleteAllDataRoute } from './routes/testing'
-import { usersRouter } from './routes/user'
-import { authRouter } from './routes/auth'
+import { blogsRouter } from './routes/blogs-router'
+import { postsRouter } from './routes/posts-router'
+import { deleteAllDataRoute } from './routes/testing-router'
+import { usersRouter } from './routes/users-router'
+import { authRouter } from './routes/auth-router'
 
 export const app = express()
 
 app.use(cors())
 app.use(express.json())
 
-app.use(paths.blogs, blogsRouter)
-app.use(paths.posts, postsRouter)
-app.use(paths.users, usersRouter)
-app.use(paths.auth, authRouter)
-app.use(paths.testing, deleteAllDataRoute)
+app.use(PATHS.blogs, blogsRouter)
+app.use(PATHS.posts, postsRouter)
+app.use(PATHS.users, usersRouter)
+app.use(PATHS.auth, authRouter)
+app.use(PATHS.testing, deleteAllDataRoute)

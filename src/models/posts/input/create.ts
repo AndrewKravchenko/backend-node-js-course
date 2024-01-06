@@ -7,5 +7,4 @@ export type CreatePost = {
 
 export type ExtendedCreatePost = CreatePost & {
   createdAt: string,
-  blogName: string,
 }

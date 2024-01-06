@@ -1,19 +1,19 @@
 import { Response, Router } from 'express'
 import { RequestWithBody } from '../models/common'
 import { AuthLogin } from '../models/auth/input/create'
-import { usersService } from '../services/user'
-import { HttpStatus } from '../../constants/httpStatus'
+import { UsersService } from '../services/users-service'
+import { HTTP_STATUS } from '../constants/httpStatus'
 
 export const authRouter = Router({})
 
 authRouter.post('/login', async (req: RequestWithBody<AuthLogin>, res: Response) => {
   const { loginOrEmail, password } = req.body
 
-  const isAuthenticated  = await usersService.checkCredentials(loginOrEmail, password)
+  const isAuthenticated  = await UsersService.checkCredentials(loginOrEmail, password)
 
   if (isAuthenticated) {
-    res.sendStatus(HttpStatus.NO_CONTENT)
+    res.sendStatus(HTTP_STATUS.NO_CONTENT)
   } else {
-    res.sendStatus(HttpStatus.UNAUTHORIZED)
+    res.sendStatus(HTTP_STATUS.UNAUTHORIZED)
   }
 })

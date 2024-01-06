@@ -1,41 +1,27 @@
 import 'dotenv/config'
 import request from 'supertest'
 import { app } from '../src/settings'
-import { HttpStatus } from '../constants/httpStatus'
-import { MongoClient } from 'mongodb'
-import { paths } from '../constants/paths'
+import { HTTP_STATUS } from '../src/constants/httpStatus'
+import { PATHS } from '../src/constants/paths'
 import { CreateBlog } from '../src/models/blogs/input/create'
 import { OutputBlog } from '../src/models/blogs/output/output'
 import { UpdateBlog } from '../src/models/blogs/input/update'
+import { setupTestEnvironment } from './utils'
+import { authCredentials } from './constants'
 
-const defaultRoute = paths.blogs
-const authLogin = process.env.AUTH_LOGIN || ''
-const authPassword = process.env.AUTH_PASSWORD || ''
-
-const dbName = 'blogs'
-const mongoURI = process.env.MONGO_URI || `mongodb://0.0.0.0:27017/${dbName}`
-
-const incorrectId = 876328
-let newBlog: OutputBlog | null = null
-const emptyResponse = {
-  pagesCount: 0,
-  page: 1,
-  pageSize: 10,
-  totalCount: 0,
-  items: []
-}
+const defaultRoute = PATHS.blogs
 
 describe('/blogs', () => {
-  const client = new MongoClient(mongoURI)
-
-  beforeAll(async () => {
-    await client.connect()
-    await request(app).delete(paths.testing).expect(HttpStatus.NO_CONTENT)
-  })
-  afterAll(async () => {
-    newBlog = null
-    await client.close()
-  })
+  let newBlog: OutputBlog | null = null
+  const incorrectId = 876328
+  const emptyResponse = {
+    pagesCount: 0,
+    page: 1,
+    pageSize: 10,
+    totalCount: 0,
+    items: []
+  }
+  setupTestEnvironment()
 
   it('GET blogs = []', async () => {
     await request(app).get(defaultRoute).expect(200, emptyResponse)
@@ -46,9 +32,9 @@ describe('/blogs', () => {
 
     await request(app)
       .post(defaultRoute)
-      .auth(authLogin, authPassword)
+      .auth(...authCredentials)
       .send(blog)
-      .expect(HttpStatus.BAD_REQUEST, {
+      .expect(HTTP_STATUS.BAD_REQUEST, {
         errorsMessages: [
           { message: 'Incorrect name!', field: 'name' },
           { message: 'Incorrect description!', field: 'description' },
@@ -70,7 +56,7 @@ describe('/blogs', () => {
     await request(app)
       .post(defaultRoute)
       .send(blog)
-      .expect(HttpStatus.UNAUTHORIZED)
+      .expect(HTTP_STATUS.UNAUTHORIZED)
 
     const res = await request(app).get(defaultRoute)
     expect(res.body).toEqual(emptyResponse)
@@ -85,9 +71,9 @@ describe('/blogs', () => {
 
     const response = await request(app)
       .post(defaultRoute)
-      .auth(authLogin, authPassword)
+      .auth(...authCredentials)
       .send(blog)
-      .expect(HttpStatus.CREATED)
+      .expect(HTTP_STATUS.CREATED)
 
     newBlog = response.body
 
@@ -111,9 +97,9 @@ describe('/blogs', () => {
 
     await request(app)
       .post(`${defaultRoute}/${newBlog!.id}/posts`)
-      .auth(authLogin, authPassword)
+      .auth(...authCredentials)
       .send(post)
-      .expect(HttpStatus.CREATED)
+      .expect(HTTP_STATUS.CREATED)
   })
 
   it('GET /blogs/:id/posts should return posts for a valid blog ID', async () => {
@@ -131,14 +117,14 @@ describe('/blogs', () => {
   })
 
   it('GET blog by ID with incorrect id should return 404', async () => {
-    await request(app).get(`${defaultRoute}/${incorrectId}`).expect(HttpStatus.NOT_FOUND)
+    await request(app).get(`${defaultRoute}/${incorrectId}`).expect(HTTP_STATUS.NOT_FOUND)
   })
 
   it('GET blog by ID with correct id should return the blog', async () => {
     await request(app)
       .get(`${defaultRoute}/${newBlog!.id}`)
 
-      .expect(HttpStatus.OK, newBlog)
+      .expect(HTTP_STATUS.OK, newBlog)
   })
 
   it('PUT blog by ID with incorrect data should return 404', async () => {
@@ -149,9 +135,9 @@ describe('/blogs', () => {
     }
     await request(app)
       .put(`${defaultRoute}/${newBlog!.id}`)
-      .auth(authLogin, authPassword)
+      .auth(...authCredentials)
       .send(blog)
-      .expect(HttpStatus.BAD_REQUEST)
+      .expect(HTTP_STATUS.BAD_REQUEST)
 
     const { body } = await request(app).get(`${defaultRoute}/${newBlog!.id}`)
     expect(body).toEqual(newBlog)
@@ -166,7 +152,7 @@ describe('/blogs', () => {
     await request(app)
       .put(`${defaultRoute}/${newBlog!.id}`)
       .send(blog)
-      .expect(HttpStatus.UNAUTHORIZED)
+      .expect(HTTP_STATUS.UNAUTHORIZED)
   })
 
   it('PUT blog by ID with correct data should update the blog', async () => {
@@ -177,9 +163,9 @@ describe('/blogs', () => {
     }
     await request(app)
       .put(`${defaultRoute}/${newBlog!.id}`)
-      .auth(authLogin, authPassword)
+      .auth(...authCredentials)
       .send(blog)
-      .expect(HttpStatus.NO_CONTENT)
+      .expect(HTTP_STATUS.NO_CONTENT)
 
     const { body } = await request(app).get(`${defaultRoute}/${newBlog!.id}`)
     expect(body).toEqual({
@@ -192,8 +178,8 @@ describe('/blogs', () => {
   it('DELETE blog by incorrect ID should return 404', async () => {
     await request(app)
       .delete(`${defaultRoute}/${incorrectId}`)
-      .auth(authLogin, authPassword)
-      .expect(HttpStatus.NOT_FOUND)
+      .auth(...authCredentials)
+      .expect(HTTP_STATUS.NOT_FOUND)
 
     const { body } = await request(app).get(defaultRoute)
     expect(body.items[0]).toEqual(newBlog)
@@ -202,14 +188,14 @@ describe('/blogs', () => {
   it('DELETE should not delete the blog without authentication', async function () {
     await request(app)
       .delete(`${defaultRoute}/${newBlog!.id}`)
-      .expect(HttpStatus.UNAUTHORIZED)
+      .expect(HTTP_STATUS.UNAUTHORIZED)
   })
 
   it('DELETE blog by correct ID should return 204', async () => {
     await request(app)
       .delete(`${defaultRoute}/${newBlog!.id}`)
-      .auth(authLogin, authPassword)
-      .expect(HttpStatus.NO_CONTENT)
+      .auth(...authCredentials)
+      .expect(HTTP_STATUS.NO_CONTENT)
 
     const { body } = await request(app).get(defaultRoute)
     expect(body.totalCount).toBe(0)

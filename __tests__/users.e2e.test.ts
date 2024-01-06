@@ -1,45 +1,32 @@
 import 'dotenv/config'
 import request from 'supertest'
 import { app } from '../src/settings'
-import { HttpStatus } from '../constants/httpStatus'
-import { MongoClient } from 'mongodb'
-import { paths } from '../constants/paths'
+import { HTTP_STATUS } from '../src/constants/httpStatus'
+import { PATHS } from '../src/constants/paths'
 import { OutputUser } from '../src/models/users/output/output'
 import { CreateUser } from '../src/models/users/input/create'
+import { setupTestEnvironment } from './utils'
+import { authCredentials } from './constants'
 
-const defaultRoute = paths.users
-const authLogin = process.env.AUTH_LOGIN || ''
-const authPassword = process.env.AUTH_PASSWORD || ''
-
-const dbName = 'users'
-const mongoURI = process.env.MONGO_URI || `mongodb://0.0.0.0:27017/${dbName}`
-
-const incorrectId = 876328
-let user: OutputUser | null = null
-const emptyResponse = {
-  pagesCount: 0,
-  page: 1,
-  pageSize: 10,
-  totalCount: 0,
-  items: []
-}
+const defaultRoute = PATHS.users
 
 describe('/users', () => {
-  const client = new MongoClient(mongoURI)
+  let user: OutputUser | null = null
+  const incorrectId = 876328
+  const emptyResponse = {
+    pagesCount: 0,
+    page: 1,
+    pageSize: 10,
+    totalCount: 0,
+    items: []
+  }
 
-  beforeAll(async () => {
-    await client.connect()
-    await request(app).delete(paths.testing).expect(HttpStatus.NO_CONTENT)
-  })
-  afterAll(async () => {
-    user = null
-    await client.close()
-  })
+  setupTestEnvironment()
 
   it('GET users = []', async () => {
     await request(app)
       .get(defaultRoute)
-      .auth(authLogin, authPassword)
+      .auth(...authCredentials)
       .expect(200, emptyResponse)
   })
 
@@ -48,9 +35,9 @@ describe('/users', () => {
 
     await request(app)
       .post(defaultRoute)
-      .auth(authLogin, authPassword)
+      .auth(...authCredentials)
       .send(newUser)
-      .expect(HttpStatus.BAD_REQUEST, {
+      .expect(HTTP_STATUS.BAD_REQUEST, {
         errorsMessages: [
           { message: 'Invalid value', field: 'login' },
           { message: 'Invalid value', field: 'email' },
@@ -65,7 +52,7 @@ describe('/users', () => {
     await request(app)
       .post(defaultRoute)
       .send(newUser)
-      .expect(HttpStatus.UNAUTHORIZED)
+      .expect(HTTP_STATUS.UNAUTHORIZED)
   })
 
   it('POST should create the user with correct data)', async function () {
@@ -77,15 +64,15 @@ describe('/users', () => {
 
     const response = await request(app)
       .post(defaultRoute)
-      .auth(authLogin, authPassword)
+      .auth(...authCredentials)
       .send(newUser)
-      .expect(HttpStatus.CREATED)
+      .expect(HTTP_STATUS.CREATED)
 
     user = response.body
 
     await request(app)
       .get(defaultRoute)
-      .auth(authLogin, authPassword)
+      .auth(...authCredentials)
       .expect(
       {
         pagesCount: 1,
@@ -100,25 +87,25 @@ describe('/users', () => {
   it('DELETE user by incorrect ID should return 404', async () => {
     await request(app)
       .delete(`${defaultRoute}/${incorrectId}`)
-      .auth(authLogin, authPassword)
-      .expect(HttpStatus.NOT_FOUND)
+      .auth(...authCredentials)
+      .expect(HTTP_STATUS.NOT_FOUND)
   })
 
   it('DELETE should not delete the user without authentication', async function () {
     await request(app)
       .delete(`${defaultRoute}/${user!.id}`)
-      .expect(HttpStatus.UNAUTHORIZED)
+      .expect(HTTP_STATUS.UNAUTHORIZED)
   })
 
   it('DELETE user by correct ID should return 204', async () => {
     await request(app)
       .delete(`${defaultRoute}/${user!.id}`)
-      .auth(authLogin, authPassword)
-      .expect(HttpStatus.NO_CONTENT)
+      .auth(...authCredentials)
+      .expect(HTTP_STATUS.NO_CONTENT)
 
     const { body } = await request(app)
       .get(defaultRoute)
-      .auth(authLogin, authPassword)
+      .auth(...authCredentials)
 
     expect(body.totalCount).toBe(0)
   })

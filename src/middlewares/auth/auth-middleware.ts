@@ -1,18 +1,18 @@
 import { Request, Response, NextFunction } from 'express'
-import { HttpStatus } from '../../../constants/httpStatus'
+import { HTTP_STATUS } from '../../constants/httpStatus'
 
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  const auth = req.headers['authorization']
+  const auth = req.headers.authorization
 
   if (!auth) {
-    res.sendStatus(HttpStatus.UNAUTHORIZED)
+    res.sendStatus(HTTP_STATUS.UNAUTHORIZED)
     return
   }
 
   const [basic, token] = auth.split(' ')
 
   if (basic !== 'Basic') {
-    res.sendStatus(HttpStatus.UNAUTHORIZED)
+    res.sendStatus(HTTP_STATUS.UNAUTHORIZED)
     return
   }
 
@@ -20,7 +20,7 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
   const [login, password] = decodedData.split(':')
 
   if (login !== process.env.AUTH_LOGIN || password !== process.env.AUTH_PASSWORD) {
-    res.sendStatus(HttpStatus.UNAUTHORIZED)
+    res.sendStatus(HTTP_STATUS.UNAUTHORIZED)
     return
   }
 

@@ -1,13 +1,3 @@
-import { OutputBlog } from '../blogs/output/output'
-import { OutputPost } from '../posts/output/output'
-import { OutputUser } from '../users/output/output'
-
-export type DB = {
-  blogs: OutputBlog[],
-  posts: OutputPost[],
-  users: OutputUser[],
-}
-
 export type BlogDB = {
   name: string,
   description: string,
@@ -21,7 +11,6 @@ export type PostDB = {
   shortDescription: string,
   content: string,
   blogId: string,
-  blogName: string,
   createdAt: string,
 }
 
