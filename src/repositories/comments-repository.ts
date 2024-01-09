@@ -1,4 +1,4 @@
-import { blogCollection, commentCollection } from '../db/db'
+import { commentCollection } from '../db/db'
 import { ObjectId } from 'mongodb'
 import { UpdateComment } from '../models/comments/input/update'
 import { CreateComment } from '../models/comments/input/create'
@@ -11,7 +11,7 @@ export class CommentsRepository {
   }
   
   static async updateComment(commentId: string, updatedComment: UpdateComment): Promise<boolean> {
-    const result = await blogCollection.updateOne(
+    const result = await commentCollection.updateOne(
       { _id: new ObjectId(commentId) },
       { $set: updatedComment }
     )

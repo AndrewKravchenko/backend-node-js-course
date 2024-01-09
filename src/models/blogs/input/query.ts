@@ -1,14 +1,5 @@
-export type QueryBlog = {
-  searchNameTerm?: string,
-  sortBy?: string,
-  sortDirection?: 'asc' | 'desc',
-  pageNumber?: string,
-  pageSize?: string,
-}
+import { Query } from '../../common'
+import { BlogDB } from '../../db/db'
 
-export type QueryPostByBlogId = {
-  sortBy?: string,
-  sortDirection?: 'asc' | 'desc',
-  pageNumber?: string,
-  pageSize?: string,
-}
+export type QueryBlog = Query<{ searchNameTerm: string | null, sortBy: keyof BlogDB, }>
+export type QueryPostByBlogId = Query<{ sortBy: keyof BlogDB, }>

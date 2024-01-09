@@ -11,6 +11,7 @@ export type PostDB = {
   shortDescription: string,
   content: string,
   blogId: string,
+  blogName: string,
   createdAt: string,
 }
 

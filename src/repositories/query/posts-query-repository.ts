@@ -4,15 +4,9 @@ import { OutputPost, OutputPosts } from '../../models/posts/output/output'
 import { paginationSkip } from '../../utils/queryParams'
 import { PostDB } from '../../models/db/db'
 import { QueryPost } from '../../models/posts/input/query'
-import { BlogsQueryRepository } from './blogs-query-repository'
 
 export class PostsQueryRepository {
-  static async getPosts(query: QueryPost): Promise<OutputPosts> {
-    const sortBy = query.sortBy || 'createdAt'
-    const sortDirection = query.sortDirection || 'desc'
-    const pageNumber = Number(query.pageNumber || 1)
-    const pageSize = Number(query.pageSize || 10)
-
+  static async getPosts({ sortBy, sortDirection, pageNumber, pageSize }: QueryPost): Promise<OutputPosts> {
     const posts = await postCollection
       .find({})
       .sort(sortBy, sortDirection)
@@ -43,16 +37,14 @@ export class PostsQueryRepository {
     return this.mapDBPostToPostOutputModel(post)
   }
 
-  static async mapDBPostToPostOutputModel(dbPost: WithId<PostDB>): Promise<OutputPost> {
-    const blog = await BlogsQueryRepository.getBlogById(dbPost.blogId)
-
+  static mapDBPostToPostOutputModel(dbPost: WithId<PostDB>): OutputPost {
     return {
       id: dbPost._id.toString(),
       title: dbPost.title,
       shortDescription: dbPost.shortDescription,
       content: dbPost.content,
       blogId: dbPost.blogId,
-      blogName: blog!.name,
+      blogName:dbPost.blogName,
       createdAt: dbPost.createdAt,
     }
   }

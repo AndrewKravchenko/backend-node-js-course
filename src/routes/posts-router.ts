@@ -5,24 +5,25 @@ import {
   RequestWithBody,
   RequestWithBodyAndParams,
   RequestWithParams,
-  RequestWithQuery, RequestWithQueryAndParams
+  RequestWithQuery,
+  RequestWithQueryAndParams
 } from '../models/common'
 import { basicAuthMiddleware, bearerAuthMiddleware } from '../middlewares/auth/auth-middleware'
-import { commentToBlogValidation, postValidation } from '../validators/posts-validator'
+import { postsGetValidation, postValidation } from '../validators/posts-validator'
 import { CreateCommentToPost, CreatePost } from '../models/posts/input/create'
 import { UpdatePost } from '../models/posts/input/update'
 import { ObjectId } from 'mongodb'
 import { QueryPost } from '../models/posts/input/query'
-import { BlogsQueryRepository } from '../repositories/query/blogs-query-repository'
 import { PostsQueryRepository } from '../repositories/query/posts-query-repository'
 import { matchedData } from 'express-validator'
 import { PostService } from '../services/posts-service'
 import { CommentsQueryRepository } from '../repositories/query/comments-query-repository'
 import { QueryComment } from '../models/comments/input/query'
+import { commentsByPostIdValidation, commentToPostValidation } from '../validators/comments-validator'
 
 export const postsRouter = Router({})
 
-postsRouter.get('/', async (req: RequestWithQuery<QueryPost>, res: Response) => {
+postsRouter.get('/', postsGetValidation(), async (req: RequestWithQuery<Partial<QueryPost>>, res: Response) => {
   const query = matchedData(req, { locations: ['query'] }) as QueryPost
   const posts = await PostsQueryRepository.getPosts(query)
 
@@ -47,7 +48,7 @@ postsRouter.get('/:postId', async (req: RequestWithParams<PostId>, res: Response
   res.send(post)
 })
 
-postsRouter.get('/:postId/comments', async (req: RequestWithQueryAndParams<PostId, QueryPost>, res: Response) => {
+postsRouter.get('/:postId/comments', commentsByPostIdValidation(), async (req: RequestWithQueryAndParams<PostId, QueryPost>, res: Response) => {
   const postId = req.params.postId
   const query = matchedData(req, { locations: ['query'] }) as QueryComment
 
@@ -66,7 +67,7 @@ postsRouter.get('/:postId/comments', async (req: RequestWithQueryAndParams<PostI
   res.send(post)
 })
 
-postsRouter.post('/:postId/comments', bearerAuthMiddleware, commentToBlogValidation,
+postsRouter.post('/:postId/comments', bearerAuthMiddleware, commentToPostValidation(),
   async (req: RequestWithBodyAndParams<PostId, CreateCommentToPost>, res: Response) => {
     const userId = req.userId
 
@@ -83,25 +84,19 @@ postsRouter.post('/:postId/comments', bearerAuthMiddleware, commentToBlogValidat
       return
     }
 
-    const post = await PostService.createCommentToPost(commentData, userId)
+    const commentId = await PostService.createCommentToPost(commentData, userId)
+    const comment = await CommentsQueryRepository.getCommentById(commentId)
 
-    if (!post) {
+    if (!comment) {
       res.sendStatus(HTTP_STATUS.NOT_FOUND)
       return
     }
 
-    res.send(post)
+    res.status(HTTP_STATUS.CREATED).send(comment)
   })
 
 postsRouter.post('/', basicAuthMiddleware, postValidation(), async (req: RequestWithBody<CreatePost>, res: Response) => {
   const newPost = matchedData(req) as CreatePost
-  const blog = await BlogsQueryRepository.getBlogById(newPost.blogId)
-
-  if (!blog) {
-    res.sendStatus(HTTP_STATUS.NOT_FOUND)
-    return
-  }
-
   const createdPostId = await PostService.createPost(newPost)
   const createdPost = await PostsQueryRepository.getPostById(createdPostId)
 

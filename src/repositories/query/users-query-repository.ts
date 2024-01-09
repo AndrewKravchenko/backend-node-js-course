@@ -6,14 +6,14 @@ import { QueryUser } from '../../models/users/input/query'
 import { ExtendedOutputUser, OutputUser, OutputUsers } from '../../models/users/output/output'
 
 export class UsersQueryRepository {
-  static async getUsers(sortData: QueryUser): Promise<OutputUsers> {
-    const sortBy = sortData.sortBy || 'createdAt'
-    const sortDirection = sortData.sortDirection || 'desc'
-    const pageNumber = Number(sortData.pageNumber || 1)
-    const pageSize = Number(sortData.pageSize || 10)
-    const searchLoginTerm = sortData.searchLoginTerm || null
-    const searchEmailTerm = sortData.searchEmailTerm || null
-
+  static async getUsers({
+    searchLoginTerm,
+    searchEmailTerm,
+    sortBy,
+    sortDirection,
+    pageNumber,
+    pageSize
+  }: QueryUser): Promise<OutputUsers> {
     let filter: Filter<UserDB> = { isDeleted: false }
 
     if (searchLoginTerm) {
@@ -53,7 +53,7 @@ export class UsersQueryRepository {
       return null
     }
 
-    return this.mapDBUserToUserOutputModel(user)
+    return this.mapDBUserToExtendedUserOutputModel(user)
   }
 
   static async findUserByLoginOrEmail(loginOrEmail: string): Promise<WithId<UserDB> | null> {
@@ -73,6 +73,7 @@ export class UsersQueryRepository {
       createdAt: dbUser.createdAt,
     }
   }
+
   static mapDBUserToUserOutputModel(dbUser: WithId<UserDB>): OutputUser {
     return {
       id: dbUser._id.toString(),

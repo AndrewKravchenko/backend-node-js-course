@@ -7,13 +7,13 @@ import { UsersRepository } from '../repositories/users-repository'
 import { ObjectId } from 'mongodb'
 import { HTTP_STATUS } from '../constants/httpStatus'
 import { UsersService } from '../services/users-service'
-import { userValidation } from '../validators/users-validator'
+import { usersGetValidation, userValidation } from '../validators/users-validator'
 import { UsersQueryRepository } from '../repositories/query/users-query-repository'
 import { matchedData } from 'express-validator'
 
 export const usersRouter = Router({})
 
-usersRouter.get('/', basicAuthMiddleware, async (req: RequestWithQuery<QueryUser>, res: Response) => {
+usersRouter.get('/', basicAuthMiddleware, usersGetValidation(), async (req: RequestWithQuery<Partial<QueryUser>>, res: Response) => {
   const query = matchedData(req, { locations: ['query'] }) as QueryUser
   const users = await UsersQueryRepository.getUsers(query)
 

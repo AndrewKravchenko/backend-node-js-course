@@ -1,9 +1,8 @@
-import { body, param } from 'express-validator'
+import { body, query } from 'express-validator'
 import { inputValidation } from '../middlewares/input-model-validation/input-validation'
 import { validateBodyString } from '../utils/validator'
 import { BlogsQueryRepository } from '../repositories/query/blogs-query-repository'
-import { checkBlogIdValidity } from './common'
-import { queryValidation } from '../middlewares/input-model-validation/query-validation'
+import { commonQueryValidation } from './common'
 
 const titleValidation = validateBodyString('title', 1, 30)
   .withMessage('Incorrect title!')
@@ -27,10 +26,16 @@ const blogIdBodyValidation = body('blogId')
   })
   .withMessage('Incorrect blogId!')
 
-export const blogIdParamValidation = param('blogId').isMongoId().custom(checkBlogIdValidity)
+export const postsSortByQueryValidation = query('sortBy')
+  .if(
+    query('sortBy').not().isIn(['title', 'shortDescription', 'content', 'blogId', 'blogName', 'createdAt'])
+  )
+  .customSanitizer(() => 'createdAt')
 
-export const blogIdValidation = () => [blogIdParamValidation, queryValidation]
-export const commentToBlogValidation = () => [contentValidation, inputValidation]
+export const postsGetValidation = () => [
+  postsSortByQueryValidation,
+  ...commonQueryValidation()
+]
 export const postValidation = () => [
   titleValidation,
   shortDescriptionValidation,

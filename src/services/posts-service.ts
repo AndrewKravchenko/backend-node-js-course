@@ -6,6 +6,7 @@ import { CommentatorInfo } from '../models/db/db'
 import { PostId } from '../models/common'
 import { UsersQueryRepository } from '../repositories/query/users-query-repository'
 import { CommentsRepository } from '../repositories/comments-repository'
+import { BlogsQueryRepository } from '../repositories/query/blogs-query-repository'
 
 export class PostService {
   static async createCommentToPost(comment: CreateCommentToPost & PostId, userId: string): Promise<string> {
@@ -22,10 +23,13 @@ export class PostService {
   }
 
   static async createPost(postData: CreatePost): Promise<string> {
+    const blog = await BlogsQueryRepository.getBlogById(postData.blogId)
+
     const newPost: ExtendedCreatePost = {
       title: postData.title,
       blogId: postData.blogId,
       content: postData.content,
+      blogName: blog!.name,
       shortDescription: postData.shortDescription,
       createdAt: new Date().toISOString()
     }

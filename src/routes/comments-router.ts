@@ -6,13 +6,14 @@ import { CommentsQueryRepository } from '../repositories/query/comments-query-re
 import { CommentsService } from '../services/comments-service'
 import { bearerAuthMiddleware } from '../middlewares/auth/auth-middleware'
 import { matchedData } from 'express-validator'
-import { commentValidation } from '../validators/comments-validator'
+import { updateCommentValidation } from '../validators/comments-validator'
 import { UpdateComment } from '../models/comments/input/update'
+import { checkCommentOwnershipGuard } from '../middlewares/guards/comment-guard'
 
 export const commentsRouter = Router({})
 
-commentsRouter.get('/:id', async (req: RequestWithParams<{ id: string }>, res: Response) => {
-  const commentId = req.params.id
+commentsRouter.get('/:commentId', async (req: RequestWithParams<CommentId>, res: Response) => {
+  const commentId = req.params.commentId
 
   if (!ObjectId.isValid(commentId)) {
     res.sendStatus(HTTP_STATUS.NOT_FOUND)
@@ -28,37 +29,27 @@ commentsRouter.get('/:id', async (req: RequestWithParams<{ id: string }>, res: R
   }
 })
 
-commentsRouter.put('/:commentId', bearerAuthMiddleware, commentValidation(), async (req: RequestWithBodyAndParams<CommentId, UpdateComment>, res: Response) => {
-  const commentId = req.params.commentId
+commentsRouter.put('/:commentId', bearerAuthMiddleware, checkCommentOwnershipGuard, updateCommentValidation(),
+  async (req: RequestWithBodyAndParams<CommentId, UpdateComment>, res: Response) => {
+    const commentId = req.params.commentId
+    const updatedComment = matchedData(req) as UpdateComment
+    const isUpdated = await CommentsService.updateComment(commentId, updatedComment)
 
-  if (!ObjectId.isValid(commentId)) {
-    res.sendStatus(HTTP_STATUS.NOT_FOUND)
-    return
-  }
+    if (isUpdated) {
+      res.send(HTTP_STATUS.NO_CONTENT)
+    } else {
+      res.sendStatus(HTTP_STATUS.NOT_FOUND)
+    }
+  })
 
-  const updatedComment = matchedData(req) as UpdateComment
-  const isUpdated = await CommentsService.updateBlog(commentId, updatedComment)
+commentsRouter.delete('/:commentId', bearerAuthMiddleware, checkCommentOwnershipGuard,
+  async (req: RequestWithParams<CommentId>, res: Response) => {
+    const commentId = req.params.commentId
+    const isDeleted = await CommentsService.deleteComment(commentId)
 
-  if (isUpdated) {
-    res.send(HTTP_STATUS.NO_CONTENT)
-  } else {
-    res.sendStatus(HTTP_STATUS.NOT_FOUND)
-  }
-})
-
-commentsRouter.get('/:id', bearerAuthMiddleware, async (req: RequestWithParams<{ id: string }>, res: Response) => {
-  const commentId = req.params.id
-
-  if (!ObjectId.isValid(commentId)) {
-    res.sendStatus(HTTP_STATUS.NOT_FOUND)
-    return
-  }
-
-  const isDeleted = await CommentsService.deleteComment(commentId)
-
-  if (isDeleted) {
-    res.sendStatus(HTTP_STATUS.NO_CONTENT)
-  } else {
-    res.sendStatus(HTTP_STATUS.NOT_FOUND)
-  }
-})
+    if (isDeleted) {
+      res.sendStatus(HTTP_STATUS.NO_CONTENT)
+    } else {
+      res.sendStatus(HTTP_STATUS.NOT_FOUND)
+    }
+  })

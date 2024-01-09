@@ -7,10 +7,7 @@ import { paginationSkip } from '../../utils/queryParams'
 
 export class CommentsQueryRepository {
   static async getCommentsByPostId(query: QueryComment, postId: string): Promise<OutputComments | null> {
-    const sortBy = query.sortBy || 'createdAt'
-    const sortDirection = query.sortDirection || 'desc'
-    const pageNumber = Number(query.pageNumber || 1)
-    const pageSize = Number(query.pageSize || 10)
+    const { sortBy, sortDirection, pageNumber, pageSize } = query
 
     const comments = await commentCollection
       .find({ postId })
@@ -19,7 +16,11 @@ export class CommentsQueryRepository {
       .limit(pageSize)
       .toArray()
 
-    const totalCount = comments.length
+    if (!comments.length) {
+      return null
+    }
+
+    const totalCount = await commentCollection.countDocuments({ postId })
     const pagesCount = Math.ceil(totalCount / pageSize)
 
     return {

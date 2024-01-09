@@ -6,6 +6,7 @@ export type CreatePost = {
 }
 
 export type ExtendedCreatePost = CreatePost & {
+  blogName: string,
   createdAt: string,
 }
 

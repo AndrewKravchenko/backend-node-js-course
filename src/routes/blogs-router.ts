@@ -9,11 +9,16 @@ import {
 } from '../models/common'
 import { HTTP_STATUS } from '../constants/httpStatus'
 import { basicAuthMiddleware } from '../middlewares/auth/auth-middleware'
-import { blogValidation } from '../validators/blogs-validator'
+import {
+  blogValidation,
+  blogsValidation,
+  blogIdValidation,
+  postsByBlogIdValidation
+} from '../validators/blogs-validator'
 import { CreateBlog, CreatePostToBlog } from '../models/blogs/input/create'
 import { UpdateBlog } from '../models/blogs/input/update'
 import { QueryBlog, QueryPostByBlogId } from '../models/blogs/input/query'
-import { blogIdValidation, postToBlogValidation } from '../validators/posts-validator'
+import { postToBlogValidation } from '../validators/posts-validator'
 import { CreatePost } from '../models/posts/input/create'
 import { BlogsQueryRepository } from '../repositories/query/blogs-query-repository'
 import { matchedData } from 'express-validator'
@@ -22,8 +27,7 @@ import { PostService } from '../services/posts-service'
 import { PostsQueryRepository } from '../repositories/query/posts-query-repository'
 
 export const blogsRouter = Router({})
-
-blogsRouter.get('/', async (req: RequestWithQuery<QueryBlog>, res: Response) => {
+blogsRouter.get('/', blogsValidation(), async (req: RequestWithQuery<Partial<QueryBlog>>, res: Response) => {
   const query = matchedData(req, { locations: ['query'] }) as QueryBlog
   const blogs = await BlogsQueryRepository.getBlogs(query)
 
@@ -41,16 +45,9 @@ blogsRouter.get('/:blogId', blogIdValidation(), async (req: RequestWithParams<Bl
   }
 })
 
-blogsRouter.get('/:blogId/posts', blogIdValidation(),
-  async (req: RequestWithQueryAndParams<BlogId, QueryPostByBlogId>, res: Response) => {
+blogsRouter.get('/:blogId/posts', blogIdValidation(), postsByBlogIdValidation(),
+  async (req: RequestWithQueryAndParams<BlogId, Partial<QueryPostByBlogId>>, res: Response) => {
     const blogId = req.params.blogId
-    const blog = await BlogsQueryRepository.getBlogById(blogId)
-
-    if (!blog) {
-      res.sendStatus(HTTP_STATUS.NOT_FOUND)
-      return
-    }
-
     const query = matchedData(req, { locations: ['query'] }) as QueryPostByBlogId
     const posts = await BlogsQueryRepository.getPostsByBlogId(blogId, query)
 
@@ -64,19 +61,17 @@ blogsRouter.post('/', basicAuthMiddleware, blogValidation(),
     const blogId = await BlogService.createBlog(newBlog)
     const createdBlog = await BlogsQueryRepository.getBlogById(blogId)
 
+    if (!createdBlog) {
+      res.sendStatus(HTTP_STATUS.NOT_FOUND)
+      return
+    }
+
     res.status(HTTP_STATUS.CREATED).send(createdBlog)
   })
 
 blogsRouter.post('/:blogId/posts', basicAuthMiddleware, blogIdValidation(), postToBlogValidation(),
   async (req: RequestWithBodyAndParams<BlogId, CreatePostToBlog>, res: Response) => {
-    const blogId = req.params.blogId
     const newPost = matchedData(req, { locations: ['params', 'body'] }) as CreatePost
-    const blog = await BlogsQueryRepository.getBlogById(blogId)
-
-    if (!blog) {
-      res.sendStatus(HTTP_STATUS.NOT_FOUND)
-      return
-    }
 
     const createdPostId = await PostService.createPost(newPost)
     const createdPost = await PostsQueryRepository.getPostById(createdPostId)

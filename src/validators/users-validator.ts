@@ -1,5 +1,7 @@
 import { inputValidation } from '../middlewares/input-model-validation/input-validation'
 import { validateBodyString } from '../utils/validator'
+import { commonQueryValidation } from './common'
+import { query } from 'express-validator'
 
 const loginValidation = validateBodyString('login', 3, 10)
   .matches('^[a-zA-Z0-9_-]*$')
@@ -12,4 +14,33 @@ const emailValidation = validateBodyString('email', 5, 50)
 export const passwordValidation = validateBodyString('password', 6, 20)
   .withMessage('Incorrect password!')
 
-export const userValidation = () => [loginValidation, emailValidation, passwordValidation, inputValidation]
+const searchLoginTermQueryValidation = query('searchLoginTerm')
+  .if(
+    query('searchLoginTerm').not().isString()
+  )
+  .customSanitizer(() => null)
+
+const searchEmailTermQueryValidation = query('searchEmailTerm')
+  .if(
+    query('searchEmailTerm').not().isString()
+  )
+  .customSanitizer(() => null)
+
+export const usersSortByQueryValidation = query('sortBy')
+  .if(
+    query('sortBy').not().isIn(['email', 'login', 'createdAt', 'isDeleted'])
+  )
+  .customSanitizer(() => 'createdAt')
+
+export const usersGetValidation = () => [
+  searchLoginTermQueryValidation,
+  searchEmailTermQueryValidation,
+  usersSortByQueryValidation,
+  ...commonQueryValidation()
+  ]
+export const userValidation = () => [
+  loginValidation,
+  emailValidation,
+  passwordValidation,
+  inputValidation
+]

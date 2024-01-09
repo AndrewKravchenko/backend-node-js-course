@@ -1,6 +1,4 @@
-export type QueryPost = {
-  sortBy?: string,
-  sortDirection?: 'asc' | 'desc',
-  pageNumber?: string,
-  pageSize?: string,
-}
+import { PostDB } from '../../db/db'
+import { Query } from '../../common'
+
+export type QueryPost = Query<{ sortBy: keyof PostDB, }>

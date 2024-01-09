@@ -17,3 +17,10 @@ export type ErrorMessage = {
 export type Error = {
   errorsMessages: ErrorMessage[]
 }
+
+export type Query<T> = {
+  sortDirection: 'asc' | 'desc',
+  pageNumber: number,
+  pageSize: number,
+} & T
+

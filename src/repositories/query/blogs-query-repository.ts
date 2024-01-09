@@ -8,13 +8,13 @@ import { BlogDB } from '../../models/db/db'
 import { PostsQueryRepository } from './posts-query-repository'
 
 export class BlogsQueryRepository {
-  static async getBlogs(query: QueryBlog): Promise<OutputBlogs> {
-    const searchNameTerm = query.searchNameTerm || null
-    const sortBy = query.sortBy || 'createdAt'
-    const sortDirection = query.sortDirection || 'desc'
-    const pageNumber = Number(query.pageNumber || 1)
-    const pageSize = Number(query.pageSize || 10)
-
+  static async getBlogs({
+    searchNameTerm,
+    sortBy,
+    sortDirection,
+    pageNumber,
+    pageSize
+  }: QueryBlog): Promise<OutputBlogs> {
     let filter: Filter<BlogDB> = {}
     if (searchNameTerm) {
       filter.name = { $regex: searchNameTerm, $options: 'i' }
@@ -50,10 +50,7 @@ export class BlogsQueryRepository {
   }
 
   static async getPostsByBlogId(blogId: string, query: QueryPostByBlogId): Promise<OutputPosts> {
-    const sortBy = query.sortBy || 'createdAt'
-    const sortDirection = query.sortDirection || 'desc'
-    const pageNumber = Number(query.pageNumber || 1)
-    const pageSize = Number(query.pageSize || 10)
+    const { sortBy, sortDirection, pageNumber, pageSize } = query
 
     const posts = await postCollection
       .find({ blogId })
