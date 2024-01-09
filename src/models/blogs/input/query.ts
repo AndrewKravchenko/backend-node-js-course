@@ -6,7 +6,7 @@ export type QueryBlog = {
   pageSize?: string,
 }
 
-export type QueryPostByBlogID = {
+export type QueryPostByBlogId = {
   sortBy?: string,
   sortDirection?: 'asc' | 'desc',
   pageNumber?: string,

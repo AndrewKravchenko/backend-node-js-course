@@ -3,7 +3,7 @@ import { Filter, ObjectId, WithId } from 'mongodb'
 import { paginationSkip } from '../../utils/queryParams'
 import { UserDB } from '../../models/db/db'
 import { QueryUser } from '../../models/users/input/query'
-import { OutputUser, OutputUsers } from '../../models/users/output/output'
+import { ExtendedOutputUser, OutputUser, OutputUsers } from '../../models/users/output/output'
 
 export class UsersQueryRepository {
   static async getUsers(sortData: QueryUser): Promise<OutputUsers> {
@@ -42,12 +42,12 @@ export class UsersQueryRepository {
       page: pageNumber,
       pageSize,
       totalCount,
-      items: users.map(this.mapDBUserToUserOutputModel)
+      items: users.map(this.mapDBUserToExtendedUserOutputModel)
     }
   }
 
-  static async getUserById(id: string): Promise<OutputUser | null> {
-    const user = await userCollection.findOne({ _id: new ObjectId(id) })
+  static async getUserById(userID: string): Promise<OutputUser | null> {
+    const user = await userCollection.findOne({ _id: new ObjectId(userID) })
 
     if (!user) {
       return null
@@ -65,12 +65,19 @@ export class UsersQueryRepository {
     })
   }
 
-  static mapDBUserToUserOutputModel(dbUser: WithId<UserDB>): OutputUser {
+  static mapDBUserToExtendedUserOutputModel(dbUser: WithId<UserDB>): ExtendedOutputUser {
     return {
       id: dbUser._id.toString(),
       login: dbUser.login,
       email: dbUser.email,
       createdAt: dbUser.createdAt,
+    }
+  }
+  static mapDBUserToUserOutputModel(dbUser: WithId<UserDB>): OutputUser {
+    return {
+      id: dbUser._id.toString(),
+      login: dbUser.login,
+      email: dbUser.email,
     }
   }
 }

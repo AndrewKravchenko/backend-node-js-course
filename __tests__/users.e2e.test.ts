@@ -3,7 +3,7 @@ import request from 'supertest'
 import { app } from '../src/settings'
 import { HTTP_STATUS } from '../src/constants/httpStatus'
 import { PATHS } from '../src/constants/paths'
-import { OutputUser } from '../src/models/users/output/output'
+import { ExtendedOutputUser } from '../src/models/users/output/output'
 import { CreateUser } from '../src/models/users/input/create'
 import { setupTestEnvironment } from './utils'
 import { authCredentials } from './constants'
@@ -11,7 +11,7 @@ import { authCredentials } from './constants'
 const defaultRoute = PATHS.users
 
 describe('/users', () => {
-  let user: OutputUser | null = null
+  let user: ExtendedOutputUser | null = null
   const incorrectId = 876328
   const emptyResponse = {
     pagesCount: 0,

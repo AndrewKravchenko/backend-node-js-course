@@ -14,7 +14,7 @@ const shortDescriptionValidation = validateBodyString('shortDescription', 1, 100
 const contentValidation = validateBodyString('content', 1, 1000)
   .withMessage('Incorrect content!')
 
-const blogIdValidation = body('blogId')
+const blogIdBodyValidation = body('blogId')
   .isMongoId()
   .custom(async (value) => {
     const blog = await BlogsQueryRepository.getBlogById(value)
@@ -29,16 +29,16 @@ const blogIdValidation = body('blogId')
 
 export const blogIdParamValidation = param('blogId').isMongoId().custom(checkBlogIdValidity)
 
+export const blogIdValidation = () => [blogIdParamValidation, queryValidation]
+export const commentToBlogValidation = () => [contentValidation, inputValidation]
 export const postValidation = () => [
   titleValidation,
   shortDescriptionValidation,
   contentValidation,
-  blogIdValidation,
+  blogIdBodyValidation,
   inputValidation
 ]
 export const postToBlogValidation = () => [
-  blogIdParamValidation,
-  queryValidation,
   titleValidation,
   shortDescriptionValidation,
   contentValidation,

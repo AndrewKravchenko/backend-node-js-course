@@ -33,8 +33,8 @@ export class PostsQueryRepository {
     }
   }
 
-  static async getPostById(id: string): Promise<OutputPost | null> {
-    const post = await postCollection.findOne({ _id: new ObjectId(id) })
+  static async getPostById(postId: string): Promise<OutputPost | null> {
+    const post = await postCollection.findOne({ _id: new ObjectId(postId) })
 
     if (!post) {
       return null

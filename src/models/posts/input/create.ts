@@ -8,3 +8,7 @@ export type CreatePost = {
 export type ExtendedCreatePost = CreatePost & {
   createdAt: string,
 }
+
+export type CreateCommentToPost = {
+  content: string,
+}

@@ -1,8 +1,26 @@
 import { UpdatePost } from '../models/posts/input/update'
-import { CreatePost, ExtendedCreatePost } from '../models/posts/input/create'
+import { CreateCommentToPost, CreatePost, ExtendedCreatePost } from '../models/posts/input/create'
 import { PostsRepository } from '../repositories/posts-repository'
+import { CreateComment } from '../models/comments/input/create'
+import { CommentatorInfo } from '../models/db/db'
+import { PostId } from '../models/common'
+import { UsersQueryRepository } from '../repositories/query/users-query-repository'
+import { CommentsRepository } from '../repositories/comments-repository'
 
 export class PostService {
+  static async createCommentToPost(comment: CreateCommentToPost & PostId, userId: string): Promise<string> {
+    const user = await UsersQueryRepository.getUserById(userId)
+    const commentatorInfo: CommentatorInfo = { userId, userLogin: user!.login }
+    const newComment: CreateComment = {
+      postId : comment.postId,
+      content: comment.content,
+      commentatorInfo,
+      createdAt: new Date().toISOString()
+    }
+
+    return await CommentsRepository.createCommentToPost(newComment)
+  }
+
   static async createPost(postData: CreatePost): Promise<string> {
     const newPost: ExtendedCreatePost = {
       title: postData.title,

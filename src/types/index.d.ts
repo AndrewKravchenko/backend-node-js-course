@@ -6,6 +6,7 @@ declare global {
       AUTH_PASSWORD: string
       MONGO_URI: string
       DB_NAME: string
+      JWT_SECRET: string
     }
   }
 

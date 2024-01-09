@@ -3,10 +3,16 @@ export type OutputUsers = {
   page: number,
   pageSize: number,
   totalCount: number,
-  items: OutputUser[]
+  items: ExtendedOutputUser[]
 }
 
 export type OutputUser = {
+  id: string,
+  login: string,
+  email: string,
+}
+
+export type ExtendedOutputUser = {
   id: string,
   login: string,
   email: string,

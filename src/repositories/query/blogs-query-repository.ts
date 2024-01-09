@@ -1,7 +1,7 @@
 import { blogCollection, postCollection } from '../../db/db'
 import { OutputBlog, OutputBlogs } from '../../models/blogs/output/output'
 import { Filter, ObjectId, WithId } from 'mongodb'
-import { QueryBlog, QueryPostByBlogID } from '../../models/blogs/input/query'
+import { QueryBlog, QueryPostByBlogId } from '../../models/blogs/input/query'
 import { OutputPosts } from '../../models/posts/output/output'
 import { paginationSkip } from '../../utils/queryParams'
 import { BlogDB } from '../../models/db/db'
@@ -49,7 +49,7 @@ export class BlogsQueryRepository {
     return this.mapDBBlogToBlogOutputModel(blog)
   }
 
-  static async getPostsByBlogId(blogId: string, query: QueryPostByBlogID): Promise<OutputPosts> {
+  static async getPostsByBlogId(blogId: string, query: QueryPostByBlogId): Promise<OutputPosts> {
     const sortBy = query.sortBy || 'createdAt'
     const sortDirection = query.sortDirection || 'desc'
     const pageNumber = Number(query.pageNumber || 1)

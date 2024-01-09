@@ -1,4 +1,4 @@
-import { BlogDB, PostDB, UserDB } from '../models/db/db'
+import { BlogDB, CommentDB, PostDB, UserDB } from '../models/db/db'
 import { MongoClient } from 'mongodb'
 
 const port = process.env.PORT || 3000
@@ -10,6 +10,7 @@ export const database = client.db(process.env.DB_NAME)
 export const blogCollection = database.collection<BlogDB>('blogs')
 export const postCollection = database.collection<PostDB>('posts')
 export const userCollection = database.collection<UserDB>('users')
+export const commentCollection = database.collection<CommentDB>('comments')
 
 export const runDb = async () => {
   try {

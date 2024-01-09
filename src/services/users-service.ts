@@ -2,9 +2,12 @@ import bcrypt from 'bcrypt'
 import { CreateUser, ExtendedCreateUser } from '../models/users/input/create'
 import { UsersRepository } from '../repositories/users-repository'
 import { UsersQueryRepository } from '../repositories/query/users-query-repository'
+import { UserDB } from '../models/db/db'
+import { WithId } from 'mongodb'
+import { AuthLogin } from '../models/auth/input/create'
 
 export class UsersService {
-  static async createUser(userData: CreateUser) {
+  static async createUser(userData: CreateUser): Promise<string> {
     const { login, password, email } = userData
     const passwordSalt = await bcrypt.genSalt(10)
     const passwordHash = await this._generateHash(password, passwordSalt)
@@ -21,16 +24,20 @@ export class UsersService {
     return UsersRepository.createUser(newUser)
   }
 
-  static async checkCredentials(loginOrEmail: string, password: string) {
-    const user = await UsersQueryRepository.findUserByLoginOrEmail(loginOrEmail)
+  static async checkCredentials(credentials: AuthLogin): Promise<null | WithId<UserDB>> {
+    const user = await UsersQueryRepository.findUserByLoginOrEmail(credentials.loginOrEmail)
 
-    if (!user) return false
-    const passwordHash = await this._generateHash(password, user.passwordSalt)
+    if (!user) return null
+    const passwordHash = await this._generateHash(credentials.password, user.passwordSalt)
 
-    return user.password === passwordHash
+    if (user.password === passwordHash) {
+      return user
+    }
+
+    return null
   }
 
-  static async _generateHash(password: string, salt: string) {
+  static async _generateHash(password: string, salt: string): Promise<string> {
     return await bcrypt.hash(password, salt)
   }
 }
