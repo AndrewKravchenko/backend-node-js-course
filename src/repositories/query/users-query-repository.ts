@@ -3,7 +3,8 @@ import { Filter, ObjectId, WithId } from 'mongodb'
 import { paginationSkip } from '../../utils/queryParams'
 import { UserDB } from '../../models/db/db'
 import { QueryUser } from '../../models/users/input/query'
-import { ExtendedOutputUser, OutputUser, OutputUsers } from '../../models/users/output/output'
+import { OutputUser, OutputUsers } from '../../models/users/output/output'
+import { EmailConfirmation } from '../../models/users/input/create'
 
 export class UsersQueryRepository {
   static async getUsers({
@@ -42,7 +43,7 @@ export class UsersQueryRepository {
       page: pageNumber,
       pageSize,
       totalCount,
-      items: users.map(this.mapDBUserToExtendedUserOutputModel)
+      items: users.map(this.mapDBUserToUserOutputModel)
     }
   }
 
@@ -53,10 +54,26 @@ export class UsersQueryRepository {
       return null
     }
 
-    return this.mapDBUserToExtendedUserOutputModel(user)
+    return this.mapDBUserToUserOutputModel(user)
   }
 
-  static async findUserByLoginOrEmail(loginOrEmail: string): Promise<WithId<UserDB> | null> {
+  static async getEmailConfirmationDataByUserId(userId: string): Promise<EmailConfirmation | null> {
+    const user = await userCollection.findOne({ _id: new ObjectId(userId) })
+
+    return user?.emailConfirmation || null
+  }
+
+  static async getUserByConfirmationCode(confirmationCode: string): Promise<WithId<UserDB> | null> {
+    const user = await userCollection.findOne({ 'emailConfirmation.confirmationCode': confirmationCode })
+
+    if (!user) {
+      return null
+    }
+
+    return user
+  }
+
+  static async getUserByLoginOrEmail(loginOrEmail: string): Promise<WithId<UserDB> | null> {
     return await userCollection.findOne({
       $or: [
         { login: { $regex: loginOrEmail, $options: 'i' } },
@@ -65,20 +82,33 @@ export class UsersQueryRepository {
     })
   }
 
-  static mapDBUserToExtendedUserOutputModel(dbUser: WithId<UserDB>): ExtendedOutputUser {
-    return {
-      id: dbUser._id.toString(),
-      login: dbUser.login,
-      email: dbUser.email,
-      createdAt: dbUser.createdAt,
+  static async isUserExists(login: string, email: string): Promise<WithId<UserDB> | null> {
+    const query: Filter<UserDB> = {
+      $or: [
+        { login: { $regex: login, $options: 'i' } },
+        { email: { $regex: email, $options: 'i' } }
+      ]
     }
+
+    return await userCollection.findOne(query)
   }
+
+  // static mapDBUserToExtendedUserOutputModel(dbUser: WithId<UserDB>): ExtendedOutputUser {
+  //   return {
+  //     id: dbUser._id.toString(),
+  //     login: dbUser.login,
+  //     email: dbUser.email,
+  //     createdAt: dbUser.createdAt,
+  //     emailConfirmation: dbUser.emailConfirmation,
+  //   }
+  // }
 
   static mapDBUserToUserOutputModel(dbUser: WithId<UserDB>): OutputUser {
     return {
       id: dbUser._id.toString(),
       login: dbUser.login,
       email: dbUser.email,
+      createdAt: dbUser.createdAt,
     }
   }
 }

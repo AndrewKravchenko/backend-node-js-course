@@ -22,14 +22,14 @@ usersRouter.get('/', basicAuthMiddleware, usersGetValidation(), async (req: Requ
 
 usersRouter.post('/', basicAuthMiddleware, userValidation(), async (req: RequestWithBody<CreateUser>, res: Response) => {
   const newUser = matchedData(req) as CreateUser
-  const isUserExists = await UsersRepository.isUserExists(newUser.login, newUser.email)
+  const user = await UsersQueryRepository.isUserExists(newUser.login, newUser.email)
 
-  if (isUserExists) {
+  if (user) {
     res.sendStatus(HTTP_STATUS.BAD_REQUEST)
     return
   }
 
-  const createdUserId = await UsersService.createUser(newUser)
+  const createdUserId = await UsersService.createUser(newUser, false)
   const createdUser = await UsersQueryRepository.getUserById(createdUserId)
 
   res.status(HTTP_STATUS.CREATED).send(createdUser)

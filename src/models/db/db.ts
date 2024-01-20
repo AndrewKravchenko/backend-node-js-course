@@ -1,3 +1,5 @@
+import { EmailConfirmation } from '../users/input/create'
+
 export type BlogDB = {
   name: string,
   description: string,
@@ -22,6 +24,7 @@ export type UserDB = {
   email: string,
   isDeleted: boolean,
   createdAt: string,
+  emailConfirmation?: EmailConfirmation
 }
 
 export type CommentDB = {

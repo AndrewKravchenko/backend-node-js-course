@@ -1,15 +1,18 @@
+import { EmailConfirmation } from '../input/create'
+
 export type OutputUsers = {
   pagesCount: number,
   page: number,
   pageSize: number,
   totalCount: number,
-  items: ExtendedOutputUser[]
+  items: OutputUser[]
 }
 
 export type OutputUser = {
   id: string,
   login: string,
   email: string,
+  createdAt: string,
 }
 
 export type ExtendedOutputUser = {
@@ -17,4 +20,5 @@ export type ExtendedOutputUser = {
   login: string,
   email: string,
   createdAt: string,
+  emailConfirmation: EmailConfirmation
 }

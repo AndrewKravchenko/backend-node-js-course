@@ -7,7 +7,7 @@ const loginValidation = validateBodyString('login', 3, 10)
   .matches('^[a-zA-Z0-9_-]*$')
   .withMessage('Incorrect login!')
 
-const emailValidation = validateBodyString('email', 5, 50)
+export const emailValidation = validateBodyString('email', 5, 50)
   .matches('^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$')
   .withMessage('Incorrect email!')
 
