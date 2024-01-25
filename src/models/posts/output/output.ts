@@ -1,10 +1,6 @@
-export type OutputPosts = {
-  pagesCount: number,
-  page: number,
-  pageSize: number,
-  totalCount: number,
-  items: OutputPost[]
-}
+import { PaginatedData } from '../../common'
+
+export type OutputPosts = PaginatedData<OutputPost>
 
 export type OutputPost = {
   id: string,

@@ -3,14 +3,29 @@ import { CreateUser, ExtendedCreateUser } from '../models/users/input/create'
 import { UsersRepository } from '../repositories/users-repository'
 import { UsersQueryRepository } from '../repositories/query/users-query-repository'
 import { UserDB } from '../models/db/db'
-import { WithId } from 'mongodb'
+import { ObjectId, WithId } from 'mongodb'
 import { v4 as uuidv4 } from 'uuid'
 import { AuthLogin } from '../models/auth/input/create'
 import { add } from 'date-fns/add'
+import { ErrorMessage } from '../models/common'
+import { OutputUser } from '../models/users/output/output'
 
 export class UsersService {
-  static async createUser(userData: CreateUser, createdByUser = true): Promise<string> {
+  static async createUser(userData: CreateUser, shouldUserConfirm = true): Promise<OutputUser | null> {
     const { login, password, email } = userData
+    const existingUser = await UsersQueryRepository.getUserByLoginOrEmail(login, email)
+
+    if (existingUser) {
+      const incorrectField = existingUser.login === login ? 'login' : 'email'
+      const errorsMessages: ErrorMessage[] = [{
+        message: `Incorrect ${incorrectField}!`,
+        field: incorrectField,
+      }]
+
+      throw { errorsMessages }
+    }
+
+
     const passwordSalt = await bcrypt.genSalt(10)
     const passwordHash = await this._generateHash(password, passwordSalt)
 
@@ -23,7 +38,7 @@ export class UsersService {
       createdAt: new Date().toISOString()
     }
 
-    if (createdByUser) {
+    if (shouldUserConfirm) {
       newUser.emailConfirmation = {
         isConfirmed: false,
         confirmationCode: uuidv4(),
@@ -34,7 +49,8 @@ export class UsersService {
       }
     }
 
-    return UsersRepository.createUser(newUser)
+    const createdUserId = await UsersRepository.createUser(newUser)
+    return UsersQueryRepository.getUserById(createdUserId)
   }
 
   static async checkCredentials(credentials: AuthLogin): Promise<null | WithId<UserDB>> {
@@ -52,5 +68,13 @@ export class UsersService {
 
   static async _generateHash(password: string, salt: string): Promise<string> {
     return await bcrypt.hash(password, salt)
+  }
+
+  static async deleteUser(userId: string): Promise<boolean> {
+    if (!ObjectId.isValid(userId)) {
+      return false
+    }
+
+    return await UsersRepository.deleteUser(userId)
   }
 }

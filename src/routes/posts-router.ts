@@ -12,12 +12,10 @@ import { basicAuthMiddleware, bearerAuthMiddleware } from '../middlewares/auth/a
 import { postsGetValidation, postValidation } from '../validators/posts-validator'
 import { CreateCommentToPost, CreatePost } from '../models/posts/input/create'
 import { UpdatePost } from '../models/posts/input/update'
-import { ObjectId } from 'mongodb'
 import { QueryPost } from '../models/posts/input/query'
 import { PostsQueryRepository } from '../repositories/query/posts-query-repository'
 import { matchedData } from 'express-validator'
 import { PostService } from '../services/posts-service'
-import { CommentsQueryRepository } from '../repositories/query/comments-query-repository'
 import { QueryComment } from '../models/comments/input/query'
 import { commentsByPostIdValidation, commentToPostValidation } from '../validators/comments-validator'
 
@@ -31,40 +29,24 @@ postsRouter.get('/', postsGetValidation(), async (req: RequestWithQuery<Partial<
 })
 
 postsRouter.get('/:postId', async (req: RequestWithParams<PostId>, res: Response) => {
-  const postId = req.params.postId
+  const post = await PostService.getPostById(req.params.postId)
 
-  if (!ObjectId.isValid(postId)) {
+  if (post) {
+    res.send(post)
+  } else {
     res.sendStatus(HTTP_STATUS.NOT_FOUND)
-    return
   }
-
-  const post = await PostsQueryRepository.getPostById(postId)
-
-  if (!post) {
-    res.sendStatus(HTTP_STATUS.NOT_FOUND)
-    return
-  }
-
-  res.send(post)
 })
 
 postsRouter.get('/:postId/comments', commentsByPostIdValidation(), async (req: RequestWithQueryAndParams<PostId, QueryPost>, res: Response) => {
-  const postId = req.params.postId
   const query = matchedData(req, { locations: ['query'] }) as QueryComment
+  const postComments = await PostService.getCommentsByPostId(req.params.postId, query)
 
-  if (!ObjectId.isValid(postId)) {
+  if (postComments) {
+    res.send(postComments)
+  } else {
     res.sendStatus(HTTP_STATUS.NOT_FOUND)
-    return
   }
-
-  const post = await CommentsQueryRepository.getCommentsByPostId(query, postId)
-
-  if (!post) {
-    res.sendStatus(HTTP_STATUS.NOT_FOUND)
-    return
-  }
-
-  res.send(post)
 })
 
 postsRouter.post('/:postId/comments', bearerAuthMiddleware, commentToPostValidation(),
@@ -76,48 +58,30 @@ postsRouter.post('/:postId/comments', bearerAuthMiddleware, commentToPostValidat
       return
     }
 
-    const postId = req.params.postId
     const commentData = matchedData(req, { locations: ['params', 'body'] }) as CreateCommentToPost & PostId
+    const comment = await PostService.createCommentToPost(commentData, userId)
 
-    if (!ObjectId.isValid(postId)) {
+    if (comment) {
+      res.status(HTTP_STATUS.CREATED).send(comment)
+    } else {
       res.sendStatus(HTTP_STATUS.NOT_FOUND)
-      return
     }
-
-    const commentId = await PostService.createCommentToPost(commentData, userId)
-    const comment = await CommentsQueryRepository.getCommentById(commentId)
-
-    if (!comment) {
-      res.sendStatus(HTTP_STATUS.NOT_FOUND)
-      return
-    }
-
-    res.status(HTTP_STATUS.CREATED).send(comment)
   })
 
 postsRouter.post('/', basicAuthMiddleware, postValidation(), async (req: RequestWithBody<CreatePost>, res: Response) => {
   const newPost = matchedData(req) as CreatePost
-  const createdPostId = await PostService.createPost(newPost)
-  const createdPost = await PostsQueryRepository.getPostById(createdPostId)
+  const createdPost = await PostService.createPost(newPost)
 
-  if (!createdPost) {
+  if (createdPost) {
+    res.status(HTTP_STATUS.CREATED).send(createdPost)
+  } else {
     res.sendStatus(HTTP_STATUS.NOT_FOUND)
-    return
   }
-
-  res.status(HTTP_STATUS.CREATED).send(createdPost)
 })
 
 postsRouter.put('/:postId', basicAuthMiddleware, postValidation(), async (req: RequestWithBodyAndParams<PostId, UpdatePost>, res: Response) => {
-  const postId = req.params.postId
-
-  if (!ObjectId.isValid(postId)) {
-    res.sendStatus(HTTP_STATUS.NOT_FOUND)
-    return
-  }
-
   const updatedPost = matchedData(req) as UpdatePost
-  const isUpdated = await PostService.updatePost(postId, updatedPost)
+  const isUpdated = await PostService.updatePost(req.params.postId, updatedPost)
 
   if (isUpdated) {
     res.send(HTTP_STATUS.NO_CONTENT)
@@ -127,14 +91,7 @@ postsRouter.put('/:postId', basicAuthMiddleware, postValidation(), async (req: R
 })
 
 postsRouter.delete('/:postId', basicAuthMiddleware, async (req: RequestWithParams<PostId>, res: Response) => {
-  const postId = req.params.postId
-
-  if (!ObjectId.isValid(postId)) {
-    res.sendStatus(HTTP_STATUS.NOT_FOUND)
-    return
-  }
-
-  const isDeleted = await PostService.deletePost(postId)
+  const isDeleted = await PostService.deletePost(req.params.postId)
 
   if (isDeleted) {
     res.sendStatus(HTTP_STATUS.NO_CONTENT)

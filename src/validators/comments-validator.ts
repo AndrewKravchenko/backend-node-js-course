@@ -9,17 +9,9 @@ import { queryValidation } from '../middlewares/input-model-validation/query-val
 const contentValidation = validateBodyString('content', 20, 300)
   .withMessage('Incorrect content!')
 
-export const checkPostIdValidity = async (postId: string) => {
-  const post = await PostsQueryRepository.getPostById(postId)
-
-  if (!post) {
-    throw new Error('Post not found')
-  }
-}
-
 const postIdParamValidation = param('postId')
   .isMongoId()
-  .custom(checkPostIdValidity)
+  .withMessage('Incorrect postId!')
 
 export const updateCommentValidation = () => [
   contentValidation,

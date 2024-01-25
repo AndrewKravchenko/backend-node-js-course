@@ -1,12 +1,7 @@
 import { CommentatorInfo } from '../../db/db'
+import { PaginatedData } from '../../common'
 
-export type OutputComments = {
-  pagesCount: number,
-  page: number,
-  pageSize: number,
-  totalCount: number,
-  items: OutputComment[]
-}
+export type OutputComments = PaginatedData<OutputComment>
 
 export type OutputComment = {
   id: string,

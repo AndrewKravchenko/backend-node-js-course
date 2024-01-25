@@ -1,12 +1,7 @@
 import { EmailConfirmation } from '../input/create'
+import { PaginatedData } from '../../common'
 
-export type OutputUsers = {
-  pagesCount: number,
-  page: number,
-  pageSize: number,
-  totalCount: number,
-  items: OutputUser[]
-}
+export type OutputUsers = PaginatedData<OutputUser>
 
 export type OutputUser = {
   id: string,
@@ -15,10 +10,4 @@ export type OutputUser = {
   createdAt: string,
 }
 
-export type ExtendedOutputUser = {
-  id: string,
-  login: string,
-  email: string,
-  createdAt: string,
-  emailConfirmation: EmailConfirmation
-}
+export type ExtendedOutputUser = OutputUser & { emailConfirmation: EmailConfirmation }

@@ -1,8 +1,8 @@
-import { body, query } from 'express-validator'
+import { body, param, query } from 'express-validator'
 import { inputValidation } from '../middlewares/input-model-validation/input-validation'
 import { validateBodyString } from '../utils/validator'
-import { BlogsQueryRepository } from '../repositories/query/blogs-query-repository'
 import { commonQueryValidation } from './common'
+import { CommentsSortOptions } from '../models/comments/input/query'
 
 const titleValidation = validateBodyString('title', 1, 30)
   .withMessage('Incorrect title!')
@@ -13,23 +13,16 @@ const shortDescriptionValidation = validateBodyString('shortDescription', 1, 100
 const contentValidation = validateBodyString('content', 1, 1000)
   .withMessage('Incorrect content!')
 
-const blogIdBodyValidation = body('blogId')
+const blogIdValidation = body('blogId')
   .isMongoId()
-  .custom(async (value) => {
-    const blog = await BlogsQueryRepository.getBlogById(value)
-
-    if (!blog) {
-      throw Error('Incorrect blogId!')
-    }
-
-    return true
-  })
   .withMessage('Incorrect blogId!')
 
+export const blogIdParamValidation = param('blogId')
+  .isMongoId()
+
+const commentsSortOptions: CommentsSortOptions[] = ['content', 'createdAt']
 export const postsSortByQueryValidation = query('sortBy')
-  .if(
-    query('sortBy').not().isIn(['title', 'shortDescription', 'content', 'blogId', 'blogName', 'createdAt'])
-  )
+  .if(query('sortBy').not().isIn(commentsSortOptions))
   .customSanitizer(() => 'createdAt')
 
 export const postsGetValidation = () => [
@@ -40,10 +33,11 @@ export const postValidation = () => [
   titleValidation,
   shortDescriptionValidation,
   contentValidation,
-  blogIdBodyValidation,
+  blogIdValidation,
   inputValidation
 ]
 export const postToBlogValidation = () => [
+  blogIdParamValidation,
   titleValidation,
   shortDescriptionValidation,
   contentValidation,

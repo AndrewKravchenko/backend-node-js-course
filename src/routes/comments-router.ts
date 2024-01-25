@@ -1,6 +1,5 @@
 import { Response, Router } from 'express'
 import { CommentId, RequestWithBodyAndParams, RequestWithParams } from '../models/common'
-import { ObjectId } from 'mongodb'
 import { HTTP_STATUS } from '../constants/httpStatus'
 import { CommentsQueryRepository } from '../repositories/query/comments-query-repository'
 import { CommentsService } from '../services/comments-service'
@@ -13,14 +12,7 @@ import { checkCommentOwnershipGuard } from '../middlewares/guards/comment-guard'
 export const commentsRouter = Router({})
 
 commentsRouter.get('/:commentId', async (req: RequestWithParams<CommentId>, res: Response) => {
-  const commentId = req.params.commentId
-
-  if (!ObjectId.isValid(commentId)) {
-    res.sendStatus(HTTP_STATUS.NOT_FOUND)
-    return
-  }
-
-  const comment = await CommentsQueryRepository.getCommentById(commentId)
+  const comment = await CommentsQueryRepository.getCommentById(req.params.commentId)
 
   if (comment) {
     res.send(comment)
@@ -31,9 +23,8 @@ commentsRouter.get('/:commentId', async (req: RequestWithParams<CommentId>, res:
 
 commentsRouter.put('/:commentId', bearerAuthMiddleware, checkCommentOwnershipGuard, updateCommentValidation(),
   async (req: RequestWithBodyAndParams<CommentId, UpdateComment>, res: Response) => {
-    const commentId = req.params.commentId
     const updatedComment = matchedData(req) as UpdateComment
-    const isUpdated = await CommentsService.updateComment(commentId, updatedComment)
+    const isUpdated = await CommentsService.updateComment(req.params.commentId, updatedComment)
 
     if (isUpdated) {
       res.send(HTTP_STATUS.NO_CONTENT)
@@ -44,8 +35,7 @@ commentsRouter.put('/:commentId', bearerAuthMiddleware, checkCommentOwnershipGua
 
 commentsRouter.delete('/:commentId', bearerAuthMiddleware, checkCommentOwnershipGuard,
   async (req: RequestWithParams<CommentId>, res: Response) => {
-    const commentId = req.params.commentId
-    const isDeleted = await CommentsService.deleteComment(commentId)
+    const isDeleted = await CommentsService.deleteComment(req.params.commentId)
 
     if (isDeleted) {
       res.sendStatus(HTTP_STATUS.NO_CONTENT)

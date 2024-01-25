@@ -73,35 +73,14 @@ export class UsersQueryRepository {
     return user
   }
 
-  static async getUserByLoginOrEmail(loginOrEmail: string): Promise<WithId<UserDB> | null> {
+  static async getUserByLoginOrEmail(loginOrEmail: string, email?: string): Promise<WithId<UserDB> | null> {
     return await userCollection.findOne({
       $or: [
         { login: { $regex: loginOrEmail, $options: 'i' } },
-        { email: { $regex: loginOrEmail, $options: 'i' } }
+        { email: { $regex: email || loginOrEmail, $options: 'i' } }
       ]
     })
   }
-
-  static async isUserExists(login: string, email: string): Promise<WithId<UserDB> | null> {
-    const query: Filter<UserDB> = {
-      $or: [
-        { login: { $regex: login, $options: 'i' } },
-        { email: { $regex: email, $options: 'i' } }
-      ]
-    }
-
-    return await userCollection.findOne(query)
-  }
-
-  // static mapDBUserToExtendedUserOutputModel(dbUser: WithId<UserDB>): ExtendedOutputUser {
-  //   return {
-  //     id: dbUser._id.toString(),
-  //     login: dbUser.login,
-  //     email: dbUser.email,
-  //     createdAt: dbUser.createdAt,
-  //     emailConfirmation: dbUser.emailConfirmation,
-  //   }
-  // }
 
   static mapDBUserToUserOutputModel(dbUser: WithId<UserDB>): OutputUser {
     return {

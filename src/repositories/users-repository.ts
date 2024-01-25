@@ -27,8 +27,8 @@ export class UsersRepository {
     return !!result.matchedCount
   }
 
-  static async deleteUser(id: string): Promise<boolean> {
-    const result = await userCollection.updateOne({ _id: new ObjectId(id) }, {
+  static async deleteUser(userId: string): Promise<boolean> {
+    const result = await userCollection.updateOne({ _id: new ObjectId(userId) }, {
       $set: { isDeleted: true }
     })
 

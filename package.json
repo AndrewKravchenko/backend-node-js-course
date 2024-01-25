@@ -7,7 +7,7 @@
     "dev": "yarn nodemon --inspect dist/index.js",
     "watch": "tsc -w",
     "copy-templates": "copyfiles -u 1 src/templates/**/*.ejs dist",
-    "jest": "jest --config jest-e2e.json --runInBand --detectOpenHandles --forceExit"
+    "jest": "jest --runInBand --detectOpenHandles --forceExit"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",

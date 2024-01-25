@@ -1,10 +1,9 @@
 import { inputValidation } from '../middlewares/input-model-validation/input-validation'
 import { validateBodyString } from '../utils/validator'
 import { commonQueryValidation } from './common'
-import { param, query } from 'express-validator'
-import { queryValidation } from '../middlewares/input-model-validation/query-validation'
-import { BlogsQueryRepository } from '../repositories/query/blogs-query-repository'
+import { query } from 'express-validator'
 import { postsSortByQueryValidation } from './posts-validator'
+import { BlogsSortOptions } from '../models/blogs/input/query'
 
 const nameValidation = validateBodyString('name', 1, 15)
   .withMessage('Incorrect name!')
@@ -17,32 +16,14 @@ const websiteUrlValidation = validateBodyString('websiteUrl', 1, 100)
   .withMessage('Incorrect websiteUrl!')
 
 const searchNameTermQueryValidation = query('searchNameTerm')
-  .if(
-    query('searchNameTerm').not().isString()
-  )
+  .if(query('searchNameTerm').not().isString())
   .customSanitizer(() => null)
 
+const blogsSortOptions: BlogsSortOptions[] = ['name', 'description', 'websiteUrl', 'createdAt', 'isMembership']
 const blogsSortByQueryValidation = query('sortBy')
-  .if(
-    query('sortBy').not().isIn(['name', 'description', 'websiteUrl', 'createdAt', 'isMembership'])
-  )
+  .if(query('sortBy').not().isIn(blogsSortOptions))
   .customSanitizer(() => 'createdAt')
 
-export const checkBlogIdValidity = async (blogId: string) => {
-  const blog = await BlogsQueryRepository.getBlogById(blogId)
-
-  if (!blog) {
-    throw new Error('Blog not found');
-  }
-}
-export const blogIdParamValidation = param('blogId')
-  .isMongoId()
-  .custom(checkBlogIdValidity)
-
-export const blogIdValidation = () => [
-  blogIdParamValidation,
-  queryValidation
-]
 export const blogsValidation = () => [
   searchNameTermQueryValidation,
   blogsSortByQueryValidation,

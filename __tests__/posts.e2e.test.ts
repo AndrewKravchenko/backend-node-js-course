@@ -57,7 +57,7 @@ describe('/posts', () => {
           { message: 'Incorrect title!', field: 'title' },
           { message: 'Incorrect shortDescription!', field: 'shortDescription' },
           { message: 'Incorrect content!', field: 'content' },
-          { message: 'Invalid value', field: 'blogId' }
+          { message: 'Incorrect blogId!', field: 'blogId' }
         ],
       })
 

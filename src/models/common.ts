@@ -24,3 +24,12 @@ export type Query<T> = {
   pageSize: number,
 } & T
 
+export type PaginatedData<T> = {
+  pagesCount: number;
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  items: T[]
+}
+
+
