@@ -1,4 +1,4 @@
-import { Response, Router } from 'express'
+import { Request, Response, Router } from 'express'
 import { ErrorMessage, RequestWithBody } from '../models/common'
 import { AuthLogin, RegistrationConfirmationCode, RegistrationEmailResending } from '../models/auth/input/create'
 import { matchedData } from 'express-validator'
@@ -26,8 +26,25 @@ authRouter.post('/login', authLoginValidation(),
     const credentials = matchedData(req) as AuthLogin
     const { code, data } = await AuthService.login(credentials)
 
-    res.status(code).send(data)
+    if (data) {
+      res.cookie('refreshToken', data.refreshToken, { httpOnly: true, secure: true, })
+      res.status(code).send({ accessToken: data.accessToken })
+    } else {
+      res.sendStatus(code)
+    }
   })
+
+authRouter.post('/refresh-token', async (req: Request, res: Response) => {
+  const refreshToken = req.cookies.refreshToken
+  const { code, data } = await AuthService.refreshAccessToken(refreshToken)
+
+  if (data) {
+    res.cookie('refreshToken', data.refreshToken, { httpOnly: true, secure: true, })
+    res.status(code).send({ accessToken: data.accessToken })
+  } else {
+    res.sendStatus(code)
+  }
+})
 
 authRouter.post('/registration', userValidation(), async (req: RequestWithBody<CreateUser>, res: Response) => {
   try {
@@ -55,3 +72,10 @@ authRouter.post('/registration-email-resending', resendRegistrationEmailValidati
 
     res.status(code).send(data)
   })
+
+authRouter.post('/logout', async (req: Request, res: Response) => {
+  const refreshToken = req.cookies.refreshToken
+  const { code } = await AuthService.logOut(refreshToken)
+
+  res.sendStatus(code)
+})

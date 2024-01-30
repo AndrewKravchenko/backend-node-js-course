@@ -2,13 +2,12 @@ import bcrypt from 'bcrypt'
 import { CreateUser, ExtendedCreateUser } from '../models/users/input/create'
 import { UsersRepository } from '../repositories/users-repository'
 import { UsersQueryRepository } from '../repositories/query/users-query-repository'
-import { UserDB } from '../models/db/db'
-import { ObjectId, WithId } from 'mongodb'
+import { ObjectId } from 'mongodb'
 import { v4 as uuidv4 } from 'uuid'
 import { AuthLogin } from '../models/auth/input/create'
 import { add } from 'date-fns/add'
 import { ErrorMessage } from '../models/common'
-import { OutputUser } from '../models/users/output/output'
+import { ExtendedOutputUser, OutputUser } from '../models/users/output/output'
 
 export class UsersService {
   static async createUser(userData: CreateUser, shouldUserConfirm = true): Promise<OutputUser | null> {
@@ -53,10 +52,12 @@ export class UsersService {
     return UsersQueryRepository.getUserById(createdUserId)
   }
 
-  static async checkCredentials(credentials: AuthLogin): Promise<null | WithId<UserDB>> {
+  static async checkCredentials(credentials: AuthLogin): Promise<null | ExtendedOutputUser> {
     const user = await UsersQueryRepository.getUserByLoginOrEmail(credentials.loginOrEmail)
 
-    if (!user) return null
+    if (!user) {
+      return null
+    }
     const passwordHash = await this._generateHash(credentials.password, user.passwordSalt)
 
     if (user.password === passwordHash) {

@@ -8,10 +8,12 @@ import { deleteAllDataRoute } from './routes/testing-router'
 import { usersRouter } from './routes/users-router'
 import { authRouter } from './routes/auth-router'
 import { commentsRouter } from './routes/comments-router'
+import cookieParser from 'cookie-parser'
 
 export const app = express()
 
 app.use(cors())
+app.use(cookieParser())
 app.use(express.json())
 
 app.use(PATHS.blogs, blogsRouter)

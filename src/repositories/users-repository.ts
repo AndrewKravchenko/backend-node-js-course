@@ -18,9 +18,9 @@ export class UsersRepository {
     return !!result.matchedCount
   }
 
-  static async updateConfirmationCode(userId: Condition<ObjectId>, confirmationCode: string): Promise<boolean> {
+  static async updateConfirmationCode(userId: string, confirmationCode: string): Promise<boolean> {
     const result = await userCollection.updateOne(
-      { _id: userId },
+      { _id: new ObjectId(userId) },
       { $set: { 'emailConfirmation.confirmationCode': confirmationCode } }
     )
 

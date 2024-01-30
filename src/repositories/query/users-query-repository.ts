@@ -3,7 +3,7 @@ import { Filter, ObjectId, WithId } from 'mongodb'
 import { paginationSkip } from '../../utils/queryParams'
 import { UserDB } from '../../models/db/db'
 import { QueryUser } from '../../models/users/input/query'
-import { OutputUser, OutputUsers } from '../../models/users/output/output'
+import { ExtendedOutputUser, OutputMe, OutputUser, OutputUsers } from '../../models/users/output/output'
 import { EmailConfirmation } from '../../models/users/input/create'
 
 export class UsersQueryRepository {
@@ -43,7 +43,7 @@ export class UsersQueryRepository {
       page: pageNumber,
       pageSize,
       totalCount,
-      items: users.map(this.mapDBUserToUserOutputModel)
+      items: users.map(this.mapDBUserToOutputUserModel)
     }
   }
 
@@ -54,7 +54,17 @@ export class UsersQueryRepository {
       return null
     }
 
-    return this.mapDBUserToUserOutputModel(user)
+    return this.mapDBUserToOutputUserModel(user)
+  }
+
+  static async getMe(userID: string): Promise<OutputMe | null> {
+    const user = await userCollection.findOne({ _id: new ObjectId(userID) })
+
+    if (!user) {
+      return null
+    }
+
+    return this.mapDBUserToOutputMeModel(user)
   }
 
   static async getEmailConfirmationDataByUserId(userId: string): Promise<EmailConfirmation | null> {
@@ -73,21 +83,47 @@ export class UsersQueryRepository {
     return user
   }
 
-  static async getUserByLoginOrEmail(loginOrEmail: string, email?: string): Promise<WithId<UserDB> | null> {
-    return await userCollection.findOne({
+  static async getUserByLoginOrEmail(loginOrEmail: string, email?: string): Promise<ExtendedOutputUser | null> {
+    const user = await userCollection.findOne({
       $or: [
         { login: { $regex: loginOrEmail, $options: 'i' } },
         { email: { $regex: email || loginOrEmail, $options: 'i' } }
       ]
     })
+
+    if (!user) {
+      return null
+    }
+
+    return this.mapDBUserToOutputUserWithPasswordModel(user)
   }
 
-  static mapDBUserToUserOutputModel(dbUser: WithId<UserDB>): OutputUser {
+  static mapDBUserToOutputUserModel(dbUser: WithId<UserDB>): OutputUser {
     return {
       id: dbUser._id.toString(),
       login: dbUser.login,
       email: dbUser.email,
       createdAt: dbUser.createdAt,
+    }
+  }
+
+  static mapDBUserToOutputUserWithPasswordModel(dbUser: WithId<UserDB>): ExtendedOutputUser {
+    return {
+      id: dbUser._id.toString(),
+      login: dbUser.login,
+      email: dbUser.email,
+      password: dbUser.password,
+      passwordSalt: dbUser.passwordSalt,
+      emailConfirmation: dbUser.emailConfirmation,
+      createdAt: dbUser.createdAt,
+    }
+  }
+
+  static mapDBUserToOutputMeModel(dbUser: WithId<UserDB>): OutputMe {
+    return {
+      userId: dbUser._id.toString(),
+      login: dbUser.login,
+      email: dbUser.email,
     }
   }
 }

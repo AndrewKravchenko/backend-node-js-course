@@ -34,6 +34,15 @@ export type CommentDB = {
   createdAt: string,
 }
 
+export type SessionsDB = {
+  sessions: Session[]
+}
+
+export type Session = {
+  refreshTokenId: string,
+  createdAt: string,
+}
+
 export type CommentatorInfo = {
   userId: string,
   userLogin: string

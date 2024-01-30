@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { HTTP_STATUS } from '../../constants/httpStatus'
-import { jwtService } from '../../services/jwt-service'
+import { JWTService } from '../../services/jwt-service'
 
 export const basicAuthMiddleware = (req: Request, res: Response, next: NextFunction) => {
   const auth = req.headers.authorization
@@ -28,7 +28,7 @@ export const basicAuthMiddleware = (req: Request, res: Response, next: NextFunct
   next()
 }
 
-export const bearerAuthMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+export const bearerAuthMiddleware = (req: Request, res: Response, next: NextFunction) => {
   const auth = req.headers.authorization
 
   if (!auth) {
@@ -37,10 +37,10 @@ export const bearerAuthMiddleware = async (req: Request, res: Response, next: Ne
   }
 
   const token = auth.split(' ')[1]
-  const userId = await jwtService.getUserIdByToken(token)
+  const accessTokenPayload = JWTService.decodeToken(token)
 
-  if (userId) {
-    req.userId = userId
+  if (accessTokenPayload?.userId) {
+    req.userId = accessTokenPayload.userId
     return next()
   }
 

@@ -3,6 +3,12 @@ import { PaginatedData } from '../../common'
 
 export type OutputUsers = PaginatedData<OutputUser>
 
+export type OutputMe = {
+  userId: string,
+  login: string,
+  email: string,
+}
+
 export type OutputUser = {
   id: string,
   login: string,
@@ -10,4 +16,8 @@ export type OutputUser = {
   createdAt: string,
 }
 
-export type ExtendedOutputUser = OutputUser & { emailConfirmation: EmailConfirmation }
+export type ExtendedOutputUser = OutputUser & {
+  password: string
+  passwordSalt: string
+  emailConfirmation?: EmailConfirmation
+}
