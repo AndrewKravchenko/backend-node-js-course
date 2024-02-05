@@ -34,6 +34,13 @@ export type CommentDB = {
   createdAt: string,
 }
 
+export type RequestLogsDB = {
+  ip: string,
+  url: string,
+  date: Date,
+  createdAt: string,
+}
+
 export type SessionsDB = {
   sessions: Session[]
 }

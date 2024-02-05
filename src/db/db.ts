@@ -1,4 +1,4 @@
-import { BlogDB, CommentDB, PostDB, SessionsDB, UserDB } from '../models/db/db'
+import { BlogDB, CommentDB, PostDB, RequestLogsDB, SessionsDB, UserDB } from '../models/db/db'
 import { Collection, Db, MongoClient } from 'mongodb'
 
 const port = process.env.PORT || 3000
@@ -31,6 +31,10 @@ class Database {
 
   public getSessionsCollection(): Collection<SessionsDB> {
     return this.database.collection<SessionsDB>('sessions')
+  }
+
+  public getRequestLogsCollection(): Collection<RequestLogsDB> {
+    return this.database.collection<RequestLogsDB>('requestLogs')
   }
 
   public async connect(): Promise<void> {
@@ -85,3 +89,4 @@ export const postCollection = db.getPostCollection()
 export const userCollection = db.getUserCollection()
 export const commentCollection = db.getCommentCollection()
 export const sessionsCollection = db.getSessionsCollection()
+export const requestLogsCollection = db.getRequestLogsCollection()

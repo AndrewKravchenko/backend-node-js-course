@@ -12,6 +12,7 @@ import { userValidation } from '../validators/users-validator'
 import { CreateUser } from '../models/users/input/create'
 import { AuthService } from '../services/auth-service'
 import { HTTP_STATUS } from '../constants/httpStatus'
+import { rateLimiter } from '../middlewares/rateLimiter-middleware'
 
 export const authRouter = Router({})
 
@@ -21,7 +22,7 @@ authRouter.get('/me', bearerAuthMiddleware, async (req: RequestWithBody<AuthLogi
   res.status(code).send(data)
 })
 
-authRouter.post('/login', authLoginValidation(),
+authRouter.post('/login', rateLimiter, authLoginValidation(),
   async (req: RequestWithBody<AuthLogin>, res: Response) => {
     const credentials = matchedData(req) as AuthLogin
     const { code, data } = await AuthService.login(credentials)
@@ -46,7 +47,7 @@ authRouter.post('/refresh-token', async (req: Request, res: Response) => {
   }
 })
 
-authRouter.post('/registration', userValidation(), async (req: RequestWithBody<CreateUser>, res: Response) => {
+authRouter.post('/registration', rateLimiter, userValidation(), async (req: RequestWithBody<CreateUser>, res: Response) => {
   try {
     const newUser = matchedData(req) as CreateUser
     await AuthService.createUser(newUser)
@@ -57,7 +58,7 @@ authRouter.post('/registration', userValidation(), async (req: RequestWithBody<C
   }
 })
 
-authRouter.post('/registration-confirmation', confirmRegistrationValidation(),
+authRouter.post('/registration-confirmation', rateLimiter, confirmRegistrationValidation(),
   async (req: RequestWithBody<RegistrationConfirmationCode>, res: Response) => {
     const { code: confirmationCode } = matchedData(req) as RegistrationConfirmationCode
     const { code, data } = await AuthService.confirmEmail(confirmationCode)
@@ -65,7 +66,7 @@ authRouter.post('/registration-confirmation', confirmRegistrationValidation(),
     res.status(code).send(data)
   })
 
-authRouter.post('/registration-email-resending', resendRegistrationEmailValidation(),
+authRouter.post('/registration-email-resending', rateLimiter, resendRegistrationEmailValidation(),
   async (req: RequestWithBody<RegistrationEmailResending>, res: Response) => {
     const { email } = matchedData(req) as RegistrationEmailResending
     const { code, data } = await AuthService.resendRegistrationEmail(email)
