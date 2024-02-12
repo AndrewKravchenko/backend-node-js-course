@@ -42,11 +42,12 @@ export type RequestLogsDB = {
 }
 
 export type SessionsDB = {
-  sessions: Session[]
-}
-
-export type Session = {
-  refreshTokenId: string,
+  ip: string
+  userId: string
+  deviceId: string
+  deviceName: string
+  lastActiveDate: string
+  expirationAt: string
   createdAt: string,
 }
 

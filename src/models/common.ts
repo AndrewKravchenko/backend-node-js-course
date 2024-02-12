@@ -3,6 +3,7 @@ import { Request } from 'express'
 export type BlogId = { blogId: string }
 export type PostId = { postId: string }
 export type UserId = { userId: string }
+export type DeviceId = { deviceId: string }
 export type CommentId = { commentId: string }
 export type RequestWithParams<P> = Request<P, {}, {}, {}>
 export type RequestWithBody<B> = Request<{}, {}, B, {}>

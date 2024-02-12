@@ -1,48 +1,35 @@
 import jwt, { JwtPayload } from 'jsonwebtoken'
 import { v4 as uuidv4 } from 'uuid'
 import { AccessTokenPayload, FreshTokens, RefreshTokenPayload, TokenPayload } from '../models/auth/input/create'
-import { SessionsRepository } from '../repositories/sessions-repository'
 
 export class JWTService {
   static generateAccessToken(payload: TokenPayload) {
-    const accessTokenPayload: AccessTokenPayload = {
-      ...payload,
-      type: 'access'
-    }
+    const accessTokenPayload: AccessTokenPayload = payload
 
     return jwt.sign(accessTokenPayload, process.env.JWT_SECRET, {
-        expiresIn: 10,
+        expiresIn: 10000,
         issuer: 'api.blogs.com',
         audience: 'blogs.com',
       }
     )
   }
 
-  static async generateRefreshToken(payload: TokenPayload) {
-    const jwtid = uuidv4()
+  static async generateRefreshToken(payload: TokenPayload, deviceId?: string) {
+    const expiresInSeconds = 20000
     const refreshTokenPayload: RefreshTokenPayload = {
       ...payload,
-      tokenType: 'refresh',
+      deviceId: deviceId || uuidv4(),
     }
 
-    const refreshToken = jwt.sign(refreshTokenPayload, process.env.JWT_SECRET, {
-      expiresIn: 20,
+    return jwt.sign(refreshTokenPayload, process.env.JWT_SECRET, {
+      expiresIn: expiresInSeconds,
       issuer: 'api.blogs.com',
       audience: 'blogs.com',
-      jwtid,
     })
-    const newSession = {
-      refreshTokenId: jwtid,
-      createdAt: new Date().toISOString(),
-    }
-
-    await SessionsRepository.addSession(payload.userId, newSession)
-
-    return refreshToken
   }
 
-  static async generateTokens(payload: TokenPayload): Promise<FreshTokens> {
-    const refreshToken = await this.generateRefreshToken(payload)
+  static async generateTokens(payload: TokenPayload, deviceId?: string): Promise<FreshTokens> {
+    const refreshToken = await this.generateRefreshToken(payload, deviceId)
     const accessToken = this.generateAccessToken(payload)
 
     return {
@@ -51,11 +38,25 @@ export class JWTService {
     }
   }
 
-  static decodeToken(token: string): JwtPayload & Partial<AccessTokenPayload | RefreshTokenPayload> | null {
+  static verifyToken(token?: string): JwtPayload | null {
+    if (!token) {
+      return null
+    }
+
     try {
-      return jwt.verify(token, process.env.JWT_SECRET) as JwtPayload
+      const payload = jwt.verify(token, process.env.JWT_SECRET)
+
+      if (typeof payload !== 'object') {
+        return null
+      }
+
+      return payload
     } catch (e) {
       return null
     }
+  }
+
+  static decodeToken(token: string): JwtPayload {
+    return jwt.decode(token) as JwtPayload
   }
 }

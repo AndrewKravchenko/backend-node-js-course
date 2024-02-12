@@ -10,7 +10,11 @@ import { JWTService } from './jwt-service'
 import { AuthLogin, FreshTokens, TokenPayload } from '../models/auth/input/create'
 import { Error, ErrorMessage } from '../models/common'
 import { SessionsRepository } from '../repositories/sessions-repository'
-import { ObjectId } from 'mongodb'
+import { SessionsQueryRepository } from '../repositories/query/sessions-query-repository'
+import { CreateSession } from '../models/sessions/input/create'
+import { convertUnixTimestampToISO } from '../utils/common'
+import { JwtPayload } from 'jsonwebtoken'
+import { UpdateSession } from '../models/sessions/input/update'
 
 export class AuthService {
   static async getMe(userId: string | null): Promise<{ code: HTTP_STATUS; data?: OutputMe; }> {
@@ -27,66 +31,80 @@ export class AuthService {
     }
   }
 
-  static async login(credentials: AuthLogin): Promise<{
+  static async login(credentials: AuthLogin, ip = '', deviceName = ''): Promise<{
     code: number
     data?: FreshTokens
   }> {
     const user = await UsersService.checkCredentials(credentials)
 
     if (user && !user.emailConfirmation) {
-      const sessions = await SessionsRepository.getUserSessions(user.id)
+      const userId = user.id
+      const sessions = await SessionsQueryRepository.getSessionsByUserId(userId)
 
       if (sessions.length > 5) {
-        await SessionsRepository.deleteOldestSession(user.id)
+        await SessionsRepository.deleteOldestSession(userId)
       }
 
       const payload: TokenPayload = {
-        userId: user.id
+        userId
       }
+
+      const tokens = await JWTService.generateTokens(payload)
+      const { iat, exp, deviceId } = JWTService.decodeToken(tokens.refreshToken)
+
+      const lastActiveDate = convertUnixTimestampToISO(iat!)
+      const expirationAt = convertUnixTimestampToISO(exp!)
+
+      const newSession: CreateSession = {
+        ip,
+        deviceId: deviceId!,
+        userId,
+        deviceName,
+        lastActiveDate,
+        expirationAt,
+        createdAt: new Date().toISOString(),
+      }
+
+      await SessionsRepository.createSession(newSession)
 
       return {
         code: HTTP_STATUS.OK,
-        data: await JWTService.generateTokens(payload),
+        data: tokens,
       }
     } else {
       return { code: HTTP_STATUS.UNAUTHORIZED }
     }
   }
 
-  static async refreshAccessToken(refreshToken?: string): Promise<{
+  static async refreshAccessToken(refreshToken?: string, ip = ''): Promise<{
     code: number
     data?: FreshTokens
   }> {
-    if (!refreshToken) {
+    const { verifiedRefreshToken, isActiveSession } = await this.verifyRefreshTokenAndCheckCurrentSession(refreshToken)
+
+    if (!verifiedRefreshToken?.deviceId || !isActiveSession) {
       return { code: HTTP_STATUS.UNAUTHORIZED }
     }
 
-    const decodedRefreshToken = JWTService.decodeToken(refreshToken)
-
-    if (!decodedRefreshToken) {
-      return { code: HTTP_STATUS.UNAUTHORIZED }
-    }
-
-    const { userId, jti: refreshTokenId } = decodedRefreshToken
-
-    if (!userId || !ObjectId.isValid(userId) || !refreshTokenId) {
-      return { code: HTTP_STATUS.UNAUTHORIZED }
-    }
-
-    const hasSession = await SessionsRepository.getSession(userId, refreshTokenId)
-    if (!hasSession) {
-      return { code: HTTP_STATUS.UNAUTHORIZED }
-    }
-
-    await SessionsRepository.deleteSession(userId, refreshTokenId)
-
+    const { userId, deviceId } = verifiedRefreshToken
     const payload: TokenPayload = {
       userId,
     }
 
+    const newTokens = await JWTService.generateTokens(payload, deviceId)
+    const newRefreshToken = JWTService.decodeToken(newTokens.refreshToken)
+
+    const updatedSession: UpdateSession = {
+      ip,
+      expirationAt: convertUnixTimestampToISO(newRefreshToken.exp!),
+      lastActiveDate: convertUnixTimestampToISO(newRefreshToken.iat!)
+    }
+
+    await SessionsRepository.refreshSession(userId, deviceId, updatedSession)
+
     return {
       code: HTTP_STATUS.OK,
-      data: await JWTService.generateTokens(payload),
+      data: newTokens,
     }
   }
 
@@ -149,30 +167,43 @@ export class AuthService {
     return { code: HTTP_STATUS.NO_CONTENT }
   }
 
-  static async logOut(refreshToken?: string): Promise<{ code: number }> {
-    if (!refreshToken) {
+  static async logOut(refreshToken: string): Promise<{ code: number }> {
+    const { verifiedRefreshToken, isActiveSession } = await this.verifyRefreshTokenAndCheckCurrentSession(refreshToken)
+
+    if (!verifiedRefreshToken || !isActiveSession) {
       return { code: HTTP_STATUS.UNAUTHORIZED }
     }
 
-    const decodedRefreshToken = JWTService.decodeToken(refreshToken)
-
-    if (!decodedRefreshToken) {
-      return { code: HTTP_STATUS.UNAUTHORIZED }
-    }
-
-    const { userId, jti: refreshTokenId } = decodedRefreshToken
-
-    if (!userId || !ObjectId.isValid(userId) || !refreshTokenId) {
-      return { code: HTTP_STATUS.UNAUTHORIZED }
-    }
-
-    const hasSession = await SessionsRepository.getSession(userId, refreshTokenId)
-    if (!hasSession) {
-      return { code: HTTP_STATUS.UNAUTHORIZED }
-    }
-
-    await SessionsRepository.deleteSession(userId, refreshTokenId)
+    await SessionsRepository.deleteSessionByDeviceId(verifiedRefreshToken.deviceId!)
 
     return { code: HTTP_STATUS.NO_CONTENT, }
+  }
+
+  static async verifyRefreshTokenAndCheckCurrentSession(refreshToken?: string): Promise<{
+    verifiedRefreshToken: JwtPayload | null,
+    isActiveSession: boolean
+  }> {
+    const verifiedRefreshToken = JWTService.verifyToken(refreshToken)
+
+    if (!verifiedRefreshToken) {
+      return { verifiedRefreshToken: null, isActiveSession: false }
+    }
+
+    const isActiveSession = await this.isActiveSession(verifiedRefreshToken)
+
+    return { verifiedRefreshToken, isActiveSession }
+  }
+
+  static async isActiveSession(verifiedRefreshToken: JwtPayload): Promise<boolean> {
+    const { userId, iat, deviceId } = verifiedRefreshToken
+
+    if (!deviceId) {
+      return false
+    }
+
+    const session = await SessionsRepository.getDetailedSession(userId, deviceId)
+    const lastActiveDate = convertUnixTimestampToISO(iat!)
+
+    return session?.lastActiveDate === lastActiveDate
   }
 }

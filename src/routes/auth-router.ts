@@ -13,6 +13,7 @@ import { CreateUser } from '../models/users/input/create'
 import { AuthService } from '../services/auth-service'
 import { HTTP_STATUS } from '../constants/httpStatus'
 import { rateLimiter } from '../middlewares/rateLimiter-middleware'
+import useragent from 'express-useragent'
 
 export const authRouter = Router({})
 
@@ -24,8 +25,11 @@ authRouter.get('/me', bearerAuthMiddleware, async (req: RequestWithBody<AuthLogi
 
 authRouter.post('/login', rateLimiter, authLoginValidation(),
   async (req: RequestWithBody<AuthLogin>, res: Response) => {
+    const ip = req.ip
+    const ua = useragent.parse(req.headers['user-agent'] || '')
+    const deviceName = `${ua.browser} ${ua.version}`
     const credentials = matchedData(req) as AuthLogin
-    const { code, data } = await AuthService.login(credentials)
+    const { code, data } = await AuthService.login(credentials, ip, deviceName)
 
     if (data) {
       res.cookie('refreshToken', data.refreshToken, { httpOnly: true, secure: true, })
@@ -36,8 +40,9 @@ authRouter.post('/login', rateLimiter, authLoginValidation(),
   })
 
 authRouter.post('/refresh-token', async (req: Request, res: Response) => {
+  const ip = req.ip
   const refreshToken = req.cookies.refreshToken
-  const { code, data } = await AuthService.refreshAccessToken(refreshToken)
+  const { code, data } = await AuthService.refreshAccessToken(refreshToken, ip)
 
   if (data) {
     res.cookie('refreshToken', data.refreshToken, { httpOnly: true, secure: true, })

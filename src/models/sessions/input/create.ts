@@ -1,3 +1,9 @@
-import { Session } from '../../db/db'
-
-export type RefreshSession = Session
+export type CreateSession = {
+  ip: string
+  userId: string
+  deviceId: string
+  deviceName: string
+  expirationAt: string
+  lastActiveDate: string
+  createdAt: string,
+}

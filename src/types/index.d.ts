@@ -1,3 +1,10 @@
+declare module 'jsonwebtoken' {
+  export interface JwtPayload {
+    userId: string;
+    deviceId?: string;
+  }
+}
+
 declare global {
   namespace NodeJS {
     interface ProcessEnv {

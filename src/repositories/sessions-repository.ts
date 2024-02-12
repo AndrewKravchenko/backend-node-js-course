@@ -1,72 +1,84 @@
 import { sessionsCollection } from '../db/db'
-import { ObjectId } from 'mongodb'
-import { RefreshSession } from '../models/sessions/input/create'
-import { Session, SessionsDB } from '../models/db/db'
+import { WithId } from 'mongodb'
+import { CreateSession } from '../models/sessions/input/create'
+import { SessionsDB } from '../models/db/db'
+import { OutputDetailedSession } from '../models/sessions/output/output'
+import { UpdateSession } from '../models/sessions/input/update'
 
 export class SessionsRepository {
-  static async getUserSessions(userId: string): Promise<Session[]> {
-    const existingSessions = await sessionsCollection.findOne({ _id: new ObjectId(userId) })
+  static async getDetailedSessionByDeviceId(deviceId: string): Promise<OutputDetailedSession | null> {
+    const session = await sessionsCollection.findOne({ deviceId })
 
-    return existingSessions?.sessions || []
-  }
-
-  static async getSession(userId: string, refreshTokenId: string): Promise<Session | null> {
-    const existingSessions = await sessionsCollection.findOne({ _id: new ObjectId(userId) })
-
-    if (existingSessions) {
-      return existingSessions.sessions.find((session) => session.refreshTokenId === refreshTokenId) || null
+    if (!session) {
+      return null
     }
 
-    return null
+    return this.mapDBSessionToOutputDetailedSessionModel(session)
   }
 
-  static async addSession(userId: string, newSession: RefreshSession): Promise<string> {
-    const userIdObjectId = new ObjectId(userId)
-    const existingSessions = await sessionsCollection.findOne({ _id: userIdObjectId })
+  static async getDetailedSession(userId: string, deviceId: string): Promise<OutputDetailedSession | null> {
+    const session = await sessionsCollection.findOne({ userId, deviceId })
 
-    const updatedSessionsDB: SessionsDB = existingSessions || { sessions: [] }
-    updatedSessionsDB.sessions.push(newSession)
+    if (!session) {
+      return null
+    }
 
-    await sessionsCollection.updateOne(
-      { _id: userIdObjectId },
-      { $set: updatedSessionsDB },
-      { upsert: true }
+    return this.mapDBSessionToOutputDetailedSessionModel(session)
+  }
+
+  static async createSession(newSession: CreateSession): Promise<string> {
+    const { insertedId } = await sessionsCollection.insertOne(newSession)
+
+    return insertedId.toString()
+  }
+
+  static async refreshSession(userId: string, deviceId: string, updatedSession: UpdateSession): Promise<boolean> {
+    const { ip, expirationAt, lastActiveDate } = updatedSession
+    const result = await sessionsCollection.updateOne(
+      { userId, deviceId },
+      {
+        $set: {
+          ip,
+          expirationAt,
+          lastActiveDate,
+        },
+      }
     )
 
-    return userIdObjectId.toString()
+    return !!result.matchedCount
   }
 
-  static async deleteSession(userId: string, refreshTokenId: string): Promise<boolean> {
-    const userIdObjectId = new ObjectId(userId)
-    const existingSessions = await sessionsCollection.findOne({ _id: userIdObjectId })
+  static async deleteSessionByDeviceId(deviceId: string): Promise<boolean> {
+    const result = await sessionsCollection.deleteOne({ deviceId })
 
-    if (existingSessions) {
-      existingSessions.sessions = existingSessions.sessions.filter(session => session.refreshTokenId !== refreshTokenId)
-
-      await sessionsCollection.updateOne(
-        { _id: userIdObjectId },
-        { $set: { sessions: existingSessions.sessions } }
-      )
-
-      return true
-    } else {
-      return false
-    }
+    return !!result.deletedCount
   }
 
   static async deleteOldestSession(userId: string): Promise<boolean> {
-    const sessions = await this.getUserSessions(userId)
+    const result = await sessionsCollection.deleteOne({
+      userId,
+      expirationAt: { $lt: new Date().toISOString() }
+    })
 
-    if (sessions.length > 0) {
-      sessions.splice(0, 1)
+    return !!result.deletedCount
+  }
 
-      await sessionsCollection.updateOne(
-        { _id: new ObjectId(userId) },
-        { $set: { sessions } }
-      )
+  static async deleteSessions(userId: string, activeSessionDeviceId: string): Promise<boolean> {
+    const result = await sessionsCollection.deleteMany({ userId, deviceId: { $ne: activeSessionDeviceId } })
 
-      return true
+    return !!result.deletedCount
+  }
+
+  static mapDBSessionToOutputDetailedSessionModel(dbSession: WithId<SessionsDB>): OutputDetailedSession {
+    return {
+      id: dbSession._id.toString(),
+      ip: dbSession.ip,
+      userId: dbSession.userId,
+      deviceId: dbSession.deviceId,
+      deviceName: dbSession.deviceName,
+      lastActiveDate: dbSession.lastActiveDate,
+      expirationAt: dbSession.expirationAt,
+      createdAt: dbSession.createdAt,
     }
-    return false
   }
 }

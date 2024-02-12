@@ -37,7 +37,7 @@ export const bearerAuthMiddleware = (req: Request, res: Response, next: NextFunc
   }
 
   const token = auth.split(' ')[1]
-  const accessTokenPayload = JWTService.decodeToken(token)
+  const accessTokenPayload = JWTService.verifyToken(token)
 
   if (accessTokenPayload?.userId) {
     req.userId = accessTokenPayload.userId

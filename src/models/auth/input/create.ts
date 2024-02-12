@@ -13,12 +13,11 @@ export type RegistrationEmailResending = {
 
 export type AccessTokenPayload = {
   userId: string
-  type: 'access'
 }
 
 export type RefreshTokenPayload = {
   userId: string
-  tokenType: 'refresh'
+  deviceId: string
 }
 
 export type TokenPayload = {

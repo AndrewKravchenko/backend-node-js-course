@@ -4,5 +4,6 @@ export const enum PATHS {
   users = '/users',
   comments = '/comments',
   auth = '/auth',
+  security = '/security',
   testing = '/testing/all-data',
 }
