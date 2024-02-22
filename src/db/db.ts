@@ -1,47 +1,57 @@
 import { BlogDB, CommentDB, PostDB, RequestLogsDB, SessionsDB, UserDB } from '../models/db/db'
-import { Collection, Db, MongoClient } from 'mongodb'
+import { model, connect, Model, Mongoose } from 'mongoose'
+import { blogSchema, commentSchema, postSchema, requestLogsSchema, sessionsSchema, userSchema } from './schemata'
 
 const port = process.env.PORT || 3000
 const uri = process.env.MONGO_URI || 'mongodb://localhost:27017'
 
 class Database {
-  private client: MongoClient
-  private database: Db
+  private blogsModel: Model<BlogDB>
+  private postsModel: Model<PostDB>
+  private usersModel: Model<UserDB>
+  private commentsModel: Model<CommentDB>
+  private sessionsModel: Model<SessionsDB>
+  private requestLogsModel: Model<RequestLogsDB>
+
+  private mongoose: Mongoose | undefined
 
   constructor() {
-    this.client = new MongoClient(uri)
-    this.database = this.client.db(process.env.DB_NAME)
+    this.blogsModel = model('blogs', blogSchema)
+    this.postsModel = model('posts', postSchema)
+    this.usersModel = model('users', userSchema)
+    this.commentsModel = model('comments', commentSchema)
+    this.sessionsModel = model('sessions', sessionsSchema)
+    this.requestLogsModel = model('requestLogs', requestLogsSchema)
   }
 
-  public getBlogCollection(): Collection<BlogDB> {
-    return this.database.collection<BlogDB>('blogs')
+  public getBlogsModel(): Model<BlogDB> {
+    return this.blogsModel
   }
 
-  public getPostCollection(): Collection<PostDB> {
-    return this.database.collection<PostDB>('posts')
+  public getPostsModel(): Model<PostDB> {
+    return this.postsModel
   }
 
-  public getUserCollection(): Collection<UserDB> {
-    return this.database.collection<UserDB>('users')
+  public getUsersModel(): Model<UserDB> {
+    return this.usersModel
   }
 
-  public getCommentCollection(): Collection<CommentDB> {
-    return this.database.collection<CommentDB>('comments')
+  public getCommentsModel(): Model<CommentDB> {
+    return this.commentsModel
   }
 
-  public getSessionsCollection(): Collection<SessionsDB> {
-    return this.database.collection<SessionsDB>('sessions')
+  public getSessionsModel(): Model<SessionsDB> {
+    return this.sessionsModel
   }
 
-  public getRequestLogsCollection(): Collection<RequestLogsDB> {
-    return this.database.collection<RequestLogsDB>('requestLogs')
+  public getRequestLogsModel(): Model<RequestLogsDB> {
+    return this.requestLogsModel
   }
 
   public async connect(): Promise<void> {
     try {
-      await this.client.connect()
-      await this.pingDatabase()
-      console.log('Connected to MongoDB server')
+      this.mongoose = await connect(uri)
+      console.log('Connected to Mongoose')
       console.log(`App started on port ${port}`)
     } catch (error) {
       console.error('Connection to MongoDB server failed:', error)
@@ -49,19 +59,10 @@ class Database {
     }
   }
 
-  public async pingDatabase(): Promise<void> {
-    try {
-      await this.database.command({ ping: 1 })
-      console.log('MongoDB ping successful')
-    } catch (error) {
-      console.error('Error pinging the database:', error)
-    }
-  }
-
   public async close(): Promise<void> {
     try {
-      await this.client.close()
-      console.log('Connection to MongoDB closed')
+      await this.mongoose?.disconnect()
+      console.log('Connection to Mongoose closed')
     } catch (error) {
       console.error('Error closing the MongoDB connection:', error)
     }
@@ -70,11 +71,12 @@ class Database {
   public async dropDatabase(): Promise<void> {
     try {
       // await this.database.dropDatabase();
-      const collections = await this.database.listCollections().toArray()
-
-      for (const collection of collections) {
-        await this.database.collection(collection.name).deleteMany({})
-      }
+      await this.blogsModel.deleteMany({});
+      await this.postsModel.deleteMany({});
+      await this.usersModel.deleteMany({});
+      await this.commentsModel.deleteMany({});
+      await this.sessionsModel.deleteMany({});
+      await this.requestLogsModel.deleteMany({})
     } catch (error) {
       console.error('Error in dropping the database:', error)
       await this.close()
@@ -84,9 +86,9 @@ class Database {
 
 export const db = new Database()
 
-export const blogCollection = db.getBlogCollection()
-export const postCollection = db.getPostCollection()
-export const userCollection = db.getUserCollection()
-export const commentCollection = db.getCommentCollection()
-export const sessionsCollection = db.getSessionsCollection()
-export const requestLogsCollection = db.getRequestLogsCollection()
+export const blogsModel = db.getBlogsModel()
+export const postsModel = db.getPostsModel()
+export const usersModel = db.getUsersModel()
+export const commentsModel = db.getCommentsModel()
+export const sessionsModel = db.getSessionsModel()
+export const requestLogsModel = db.getRequestLogsModel()

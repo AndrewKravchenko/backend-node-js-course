@@ -1,4 +1,4 @@
-import { CreateUser } from '../models/users/input/create'
+import { CreateUser, PasswordRecovery } from '../models/users/input/create'
 import { UsersService } from './users-service'
 import { EmailManager } from '../managers/emails/email-manager'
 import { UsersQueryRepository } from '../repositories/query/users-query-repository'
@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { HTTP_STATUS } from '../constants/httpStatus'
 import { OutputMe } from '../models/users/output/output'
 import { JWTService } from './jwt-service'
-import { AuthLogin, FreshTokens, TokenPayload } from '../models/auth/input/create'
+import { AuthLogin, FreshTokens, PasswordChangeData, TokenPayload } from '../models/auth/input/create'
 import { Error, ErrorMessage } from '../models/common'
 import { SessionsRepository } from '../repositories/sessions-repository'
 import { SessionsQueryRepository } from '../repositories/query/sessions-query-repository'
@@ -15,6 +15,7 @@ import { CreateSession } from '../models/sessions/input/create'
 import { convertUnixTimestampToISO } from '../utils/common'
 import { JwtPayload } from 'jsonwebtoken'
 import { UpdateSession } from '../models/sessions/input/update'
+import { add } from 'date-fns/add'
 
 export class AuthService {
   static async getMe(userId: string | null): Promise<{ code: HTTP_STATUS; data?: OutputMe; }> {
@@ -145,6 +146,49 @@ export class AuthService {
     }
 
     return { code: HTTP_STATUS.BAD_REQUEST, data: { errorsMessages } }
+  }
+
+  static async sendPasswordRecoveryEmail(email: string): Promise<{ code: HTTP_STATUS; data?: Error }> {
+    const user = await UsersQueryRepository.getUserByLoginOrEmail(email)
+
+    if (!user) {
+      return { code: HTTP_STATUS.NO_CONTENT }
+    }
+
+    const passwordRecovery: PasswordRecovery = {
+      code: uuidv4(),
+      expirationDate: add(new Date(), {
+        hours: 1,
+        minutes: 1
+      }),
+    }
+    await UsersRepository.createRecoveryCode(user.id, passwordRecovery)
+    await EmailManager.sendPasswordRecoveryEmail(email, passwordRecovery.code)
+
+    return { code: HTTP_STATUS.NO_CONTENT }
+  }
+
+  static async changeUserPassword(passwordChangeData: PasswordChangeData): Promise<{
+    code: HTTP_STATUS;
+    data?: Error
+  }> {
+    const user = await UsersRepository.getUserByPasswordRecoveryCode(passwordChangeData.recoveryCode)
+
+    if (!user?.passwordRecovery) {
+      return { code: HTTP_STATUS.BAD_REQUEST }
+    }
+
+    const isCorrectCode = user.passwordRecovery.code === passwordChangeData.recoveryCode
+    const isExpired = user.passwordRecovery.expirationDate < new Date()
+
+    if (!isCorrectCode || isExpired) {
+      return { code: HTTP_STATUS.BAD_REQUEST }
+    }
+
+    const passwordData = await UsersService.generatePasswordHash(passwordChangeData.newPassword)
+    await UsersRepository.changeUserPassword(user._id, passwordData)
+
+    return { code: HTTP_STATUS.NO_CONTENT }
   }
 
   static async resendRegistrationEmail(email: string): Promise<{ code: HTTP_STATUS; data?: Error }> {

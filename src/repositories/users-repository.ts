@@ -1,16 +1,48 @@
-import { userCollection } from '../db/db'
-import { ExtendedCreateUser } from '../models/users/input/create'
-import { Condition, ObjectId } from 'mongodb'
+import { usersModel } from '../db/db'
+import { ExtendedCreateUser, PasswordHashResult, PasswordRecovery } from '../models/users/input/create'
+import { Condition, ObjectId, WithId } from 'mongodb'
+import { UserDB } from '../models/db/db'
 
 export class UsersRepository {
-  static async createUser(newUser: ExtendedCreateUser): Promise<string> {
-    const { insertedId } = await userCollection.insertOne(newUser)
+  static async getUserByPasswordRecoveryCode(code: string): Promise<WithId<UserDB> | null> {
+    const user = await usersModel.findOne({ 'passwordRecovery.code': code })
 
-    return insertedId.toString()
+    if (!user) {
+      return null
+    }
+
+    return user
+  }
+
+  static async createUser(newUser: ExtendedCreateUser): Promise<string> {
+    const { _id } = await usersModel.create(newUser)
+
+    return _id.toString()
+  }
+
+  static async createRecoveryCode(userId: string, passwordRecovery: PasswordRecovery): Promise<boolean> {
+    const result = await usersModel.updateOne(
+      { _id: new ObjectId(userId) },
+      { $set: { passwordRecovery } }
+    )
+
+    return !!result.matchedCount
+  }
+
+  static async changeUserPassword(userId: Condition<ObjectId>, passwordData: PasswordHashResult): Promise<boolean> {
+    const result = await usersModel.updateOne(
+      { _id: userId },
+      {
+        $set: { passwordSalt: passwordData.passwordSalt, password: passwordData.passwordHash },
+        $unset: { 'passwordRecovery': '' }
+      }
+    )
+
+    return !!result.matchedCount
   }
 
   static async updateConfirmation(userId: Condition<ObjectId>): Promise<boolean> {
-    const result = await userCollection.updateOne(
+    const result = await usersModel.updateOne(
       { _id: userId },
       { $unset: { 'emailConfirmation': '' } }
     )
@@ -19,7 +51,7 @@ export class UsersRepository {
   }
 
   static async updateConfirmationCode(userId: string, confirmationCode: string): Promise<boolean> {
-    const result = await userCollection.updateOne(
+    const result = await usersModel.updateOne(
       { _id: new ObjectId(userId) },
       { $set: { 'emailConfirmation.confirmationCode': confirmationCode } }
     )
@@ -28,7 +60,7 @@ export class UsersRepository {
   }
 
   static async deleteUser(userId: string): Promise<boolean> {
-    const result = await userCollection.updateOne({ _id: new ObjectId(userId) }, {
+    const result = await usersModel.updateOne({ _id: new ObjectId(userId) }, {
       $set: { isDeleted: true }
     })
 

@@ -1,4 +1,4 @@
-import { EmailConfirmation } from '../input/create'
+import { EmailConfirmation, PasswordRecovery } from '../input/create'
 import { PaginatedData } from '../../common'
 
 export type OutputUsers = PaginatedData<OutputUser>
@@ -19,5 +19,6 @@ export type OutputUser = {
 export type ExtendedOutputUser = OutputUser & {
   password: string
   passwordSalt: string
+  passwordRecovery?: PasswordRecovery
   emailConfirmation?: EmailConfirmation
 }

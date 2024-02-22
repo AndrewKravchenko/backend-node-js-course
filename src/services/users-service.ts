@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt'
-import { CreateUser, ExtendedCreateUser } from '../models/users/input/create'
+import { CreateUser, ExtendedCreateUser, PasswordHashResult } from '../models/users/input/create'
 import { UsersRepository } from '../repositories/users-repository'
 import { UsersQueryRepository } from '../repositories/query/users-query-repository'
 import { ObjectId } from 'mongodb'
@@ -24,10 +24,7 @@ export class UsersService {
       throw { errorsMessages }
     }
 
-
-    const passwordSalt = await bcrypt.genSalt(10)
-    const passwordHash = await this._generateHash(password, passwordSalt)
-
+    const { passwordSalt, passwordHash } = await this.generatePasswordHash(password)
     const newUser: ExtendedCreateUser = {
       login,
       password: passwordHash,
@@ -65,6 +62,13 @@ export class UsersService {
     }
 
     return null
+  }
+
+  static async generatePasswordHash(password: string): Promise<PasswordHashResult> {
+    const passwordSalt = await bcrypt.genSalt(10)
+    const passwordHash = await this._generateHash(password, passwordSalt)
+
+    return { passwordSalt, passwordHash }
   }
 
   static async _generateHash(password: string, salt: string): Promise<string> {

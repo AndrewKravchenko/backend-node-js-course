@@ -7,6 +7,15 @@ export type RegistrationConfirmationCode = {
   code: 'string',
 }
 
+export type PasswordChangeData = {
+  newPassword: 'string',
+  recoveryCode: 'string',
+}
+
+export type PasswordRecovery = {
+  email: 'string',
+}
+
 export type RegistrationEmailResending = {
   email: 'string',
 }

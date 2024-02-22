@@ -1,4 +1,4 @@
-import { sessionsCollection } from '../db/db'
+import { sessionsModel } from '../db/db'
 import { WithId } from 'mongodb'
 import { CreateSession } from '../models/sessions/input/create'
 import { SessionsDB } from '../models/db/db'
@@ -7,7 +7,7 @@ import { UpdateSession } from '../models/sessions/input/update'
 
 export class SessionsRepository {
   static async getDetailedSessionByDeviceId(deviceId: string): Promise<OutputDetailedSession | null> {
-    const session = await sessionsCollection.findOne({ deviceId })
+    const session = await sessionsModel.findOne({ deviceId })
 
     if (!session) {
       return null
@@ -17,7 +17,7 @@ export class SessionsRepository {
   }
 
   static async getDetailedSession(userId: string, deviceId: string): Promise<OutputDetailedSession | null> {
-    const session = await sessionsCollection.findOne({ userId, deviceId })
+    const session = await sessionsModel.findOne({ userId, deviceId })
 
     if (!session) {
       return null
@@ -27,14 +27,14 @@ export class SessionsRepository {
   }
 
   static async createSession(newSession: CreateSession): Promise<string> {
-    const { insertedId } = await sessionsCollection.insertOne(newSession)
+    const { _id } = await sessionsModel.create(newSession)
 
-    return insertedId.toString()
+    return _id.toString()
   }
 
   static async refreshSession(userId: string, deviceId: string, updatedSession: UpdateSession): Promise<boolean> {
     const { ip, expirationAt, lastActiveDate } = updatedSession
-    const result = await sessionsCollection.updateOne(
+    const result = await sessionsModel.updateOne(
       { userId, deviceId },
       {
         $set: {
@@ -49,13 +49,13 @@ export class SessionsRepository {
   }
 
   static async deleteSessionByDeviceId(deviceId: string): Promise<boolean> {
-    const result = await sessionsCollection.deleteOne({ deviceId })
+    const result = await sessionsModel.deleteOne({ deviceId })
 
     return !!result.deletedCount
   }
 
   static async deleteOldestSession(userId: string): Promise<boolean> {
-    const result = await sessionsCollection.deleteOne({
+    const result = await sessionsModel.deleteOne({
       userId,
       expirationAt: { $lt: new Date().toISOString() }
     })
@@ -64,7 +64,7 @@ export class SessionsRepository {
   }
 
   static async deleteSessions(userId: string, activeSessionDeviceId: string): Promise<boolean> {
-    const result = await sessionsCollection.deleteMany({ userId, deviceId: { $ne: activeSessionDeviceId } })
+    const result = await sessionsModel.deleteMany({ userId, deviceId: { $ne: activeSessionDeviceId } })
 
     return !!result.deletedCount
   }

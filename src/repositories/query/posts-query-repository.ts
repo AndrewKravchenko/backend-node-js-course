@@ -1,4 +1,4 @@
-import { postCollection } from '../../db/db'
+import { postsModel } from '../../db/db'
 import { ObjectId, WithId } from 'mongodb'
 import { OutputPost, OutputPosts } from '../../models/posts/output/output'
 import { paginationSkip } from '../../utils/queryParams'
@@ -7,14 +7,13 @@ import { QueryPost } from '../../models/posts/input/query'
 
 export class PostsQueryRepository {
   static async getPosts({ sortBy, sortDirection, pageNumber, pageSize }: QueryPost): Promise<OutputPosts> {
-    const posts = await postCollection
+    const posts = await postsModel
       .find({})
-      .sort(sortBy, sortDirection)
+      .sort({ [sortBy]: sortDirection })
       .skip(paginationSkip(pageNumber, pageSize))
       .limit(pageSize)
-      .toArray()
 
-    const totalCount = await postCollection.countDocuments({})
+    const totalCount = await postsModel.countDocuments({})
     const pagesCount = Math.ceil(totalCount / pageSize)
     const items = await Promise.all(posts.map(this.mapDBPostToPostOutputModel))
 
@@ -28,7 +27,7 @@ export class PostsQueryRepository {
   }
 
   static async getPostById(postId: string): Promise<OutputPost | null> {
-    const post = await postCollection.findOne({ _id: new ObjectId(postId) })
+    const post = await postsModel.findOne({ _id: new ObjectId(postId) })
 
     if (!post) {
       return null

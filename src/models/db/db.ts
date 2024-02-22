@@ -1,4 +1,4 @@
-import { EmailConfirmation } from '../users/input/create'
+import { EmailConfirmation, PasswordRecovery } from '../users/input/create'
 
 export type BlogDB = {
   name: string,
@@ -23,8 +23,9 @@ export type UserDB = {
   login: string,
   email: string,
   isDeleted: boolean,
-  createdAt: string,
+  passwordRecovery?: PasswordRecovery
   emailConfirmation?: EmailConfirmation
+  createdAt: string,
 }
 
 export type CommentDB = {

@@ -1,17 +1,17 @@
-import { commentCollection } from '../db/db'
+import { commentsModel } from '../db/db'
 import { ObjectId } from 'mongodb'
 import { UpdateComment } from '../models/comments/input/update'
 import { CreateComment } from '../models/comments/input/create'
 
 export class CommentsRepository {
   static async createCommentToPost(newComment: CreateComment): Promise<string> {
-    const { insertedId } = await commentCollection.insertOne(newComment)
+    const { _id } = await commentsModel.create(newComment)
 
-    return insertedId.toString()
+    return _id.toString()
   }
   
   static async updateComment(commentId: string, updatedComment: UpdateComment): Promise<boolean> {
-    const result = await commentCollection.updateOne(
+    const result = await commentsModel.updateOne(
       { _id: new ObjectId(commentId) },
       { $set: updatedComment }
     )
@@ -20,7 +20,7 @@ export class CommentsRepository {
   }
 
   static async deleteComment(commentId: string): Promise<boolean> {
-    const result = await commentCollection.deleteOne({ _id: new ObjectId(commentId) })
+    const result = await commentsModel.deleteOne({ _id: new ObjectId(commentId) })
 
     return !!result.deletedCount
   }

@@ -1,11 +1,12 @@
-import { blogCollection, postCollection } from '../../db/db'
+import { blogsModel, postsModel } from '../../db/db'
 import { OutputBlog, OutputBlogs } from '../../models/blogs/output/output'
-import { Filter, ObjectId, WithId } from 'mongodb'
+import { ObjectId, WithId } from 'mongodb'
 import { QueryBlog, QueryPostByBlogId } from '../../models/blogs/input/query'
 import { OutputPosts } from '../../models/posts/output/output'
 import { paginationSkip } from '../../utils/queryParams'
 import { BlogDB } from '../../models/db/db'
 import { PostsQueryRepository } from './posts-query-repository'
+import { FilterQuery } from 'mongoose'
 
 export class BlogsQueryRepository {
   static async getBlogs({
@@ -15,19 +16,18 @@ export class BlogsQueryRepository {
     pageNumber,
     pageSize
   }: QueryBlog): Promise<OutputBlogs> {
-    let filter: Filter<BlogDB> = {}
+    let filter: FilterQuery<BlogDB> = {}
     if (searchNameTerm) {
       filter.name = { $regex: searchNameTerm, $options: 'i' }
     }
 
-    const blogs = await blogCollection
+    const blogs = await blogsModel
       .find(filter)
-      .sort(sortBy, sortDirection)
+      .sort({ [sortBy]: sortDirection })
       .skip(paginationSkip(pageNumber, pageSize))
       .limit(pageSize)
-      .toArray()
 
-    const totalCount = await blogCollection.countDocuments(filter)
+    const totalCount = await blogsModel.countDocuments(filter)
     const pagesCount = Math.ceil(totalCount / pageSize)
 
     return {
@@ -40,7 +40,7 @@ export class BlogsQueryRepository {
   }
 
   static async getBlogById(id: string): Promise<OutputBlog | null> {
-    const blog = await blogCollection.findOne({ _id: new ObjectId(id) })
+    const blog = await blogsModel.findOne({ _id: new ObjectId(id) })
 
     if (!blog) {
       return null
@@ -52,14 +52,13 @@ export class BlogsQueryRepository {
   static async getPostsByBlogId(blogId: string, query: QueryPostByBlogId): Promise<OutputPosts> {
     const { sortBy, sortDirection, pageNumber, pageSize } = query
 
-    const posts = await postCollection
+    const posts = await postsModel
       .find({ blogId })
-      .sort(sortBy, sortDirection)
+      .sort({ [sortBy]: sortDirection })
       .skip(paginationSkip(pageNumber, pageSize))
       .limit(pageSize)
-      .toArray()
 
-    const totalCount = await postCollection.countDocuments({ blogId })
+    const totalCount = await postsModel.countDocuments({ blogId })
     const pagesCount = Math.ceil(totalCount / pageSize)
     const items = await Promise.all(posts.map(PostsQueryRepository.mapDBPostToPostOutputModel))
 

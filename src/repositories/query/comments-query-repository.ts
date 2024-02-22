@@ -1,4 +1,4 @@
-import { commentCollection } from '../../db/db'
+import { commentsModel } from '../../db/db'
 import { ObjectId, WithId } from 'mongodb'
 import { CommentDB } from '../../models/db/db'
 import { OutputComment, OutputComments } from '../../models/comments/output/output'
@@ -9,18 +9,17 @@ export class CommentsQueryRepository {
   static async getCommentsByPostId(query: QueryComment, postId: string): Promise<OutputComments | null> {
     const { sortBy, sortDirection, pageNumber, pageSize } = query
 
-    const comments = await commentCollection
+    const comments = await commentsModel
       .find({ postId })
-      .sort(sortBy, sortDirection)
+      .sort({ [sortBy]: sortDirection })
       .skip(paginationSkip(pageNumber, pageSize))
       .limit(pageSize)
-      .toArray()
 
     if (!comments.length) {
       return null
     }
 
-    const totalCount = await commentCollection.countDocuments({ postId })
+    const totalCount = await commentsModel.countDocuments({ postId })
     const pagesCount = Math.ceil(totalCount / pageSize)
 
     return {
@@ -33,7 +32,7 @@ export class CommentsQueryRepository {
   }
 
   static async getCommentById(commentId: string): Promise<OutputComment | null> {
-    const comment = await commentCollection.findOne({ _id: new ObjectId(commentId) })
+    const comment = await commentsModel.findOne({ _id: new ObjectId(commentId) })
 
     if (!comment) {
       return null

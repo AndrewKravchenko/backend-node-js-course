@@ -1,10 +1,18 @@
 import { Request, Response, Router } from 'express'
 import { ErrorMessage, RequestWithBody } from '../models/common'
-import { AuthLogin, RegistrationConfirmationCode, RegistrationEmailResending } from '../models/auth/input/create'
+import {
+  AuthLogin,
+  PasswordChangeData,
+  PasswordRecovery,
+  RegistrationConfirmationCode,
+  RegistrationEmailResending
+} from '../models/auth/input/create'
 import { matchedData } from 'express-validator'
 import {
   authLoginValidation,
   confirmRegistrationValidation,
+  passwordRecoveryEmailValidation,
+  recoveryPasswordValidation,
   resendRegistrationEmailValidation
 } from '../validators/auth-validator'
 import { bearerAuthMiddleware } from '../middlewares/auth/auth-middleware'
@@ -38,6 +46,20 @@ authRouter.post('/login', rateLimiter, authLoginValidation(),
       res.sendStatus(code)
     }
   })
+
+authRouter.post('/password-recovery', rateLimiter, passwordRecoveryEmailValidation(), async (req: Request, res: Response) => {
+  const { email } = matchedData(req) as PasswordRecovery
+  const { code, data } = await AuthService.sendPasswordRecoveryEmail(email)
+
+  res.status(code).send(data)
+})
+
+authRouter.post('/new-password', rateLimiter, recoveryPasswordValidation(), async (req: Request, res: Response) => {
+  const passwordChangeData = matchedData(req) as PasswordChangeData
+  const { code, data } = await AuthService.changeUserPassword(passwordChangeData)
+
+  res.status(code).send(data)
+})
 
 authRouter.post('/refresh-token', async (req: Request, res: Response) => {
   const ip = req.ip

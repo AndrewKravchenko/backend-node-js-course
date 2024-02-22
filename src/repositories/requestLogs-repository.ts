@@ -1,4 +1,4 @@
-import { requestLogsCollection } from '../db/db'
+import { requestLogsModel } from '../db/db'
 import { QueryRequestLogs } from '../models/requestLogs/input/query'
 import { CreateRequestLog } from '../models/requestLogs/input/create'
 
@@ -6,7 +6,7 @@ export class RequestLogsRepository {
   static async getRequestLogs(query: QueryRequestLogs): Promise<number> {
     const { ip, url, date } = query
 
-    return await requestLogsCollection.countDocuments({
+    return await requestLogsModel.countDocuments({
       ip,
       url,
       date: { $gte: date }
@@ -14,8 +14,8 @@ export class RequestLogsRepository {
   }
 
   static async createRequestLogs(newRequestLog: CreateRequestLog): Promise<string> {
-    const { insertedId } = await requestLogsCollection.insertOne(newRequestLog)
+    const { _id } = await requestLogsModel.create(newRequestLog)
 
-    return insertedId.toString()
+    return _id.toString()
   }
 }

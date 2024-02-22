@@ -1,10 +1,11 @@
-import { userCollection } from '../../db/db'
-import { Filter, ObjectId, WithId } from 'mongodb'
+import { usersModel } from '../../db/db'
+import { ObjectId, WithId } from 'mongodb'
 import { paginationSkip } from '../../utils/queryParams'
 import { UserDB } from '../../models/db/db'
 import { QueryUser } from '../../models/users/input/query'
 import { ExtendedOutputUser, OutputMe, OutputUser, OutputUsers } from '../../models/users/output/output'
 import { EmailConfirmation } from '../../models/users/input/create'
+import { FilterQuery } from 'mongoose'
 
 export class UsersQueryRepository {
   static async getUsers({
@@ -15,7 +16,7 @@ export class UsersQueryRepository {
     pageNumber,
     pageSize
   }: QueryUser): Promise<OutputUsers> {
-    let filter: Filter<UserDB> = { isDeleted: false }
+    let filter: FilterQuery<UserDB> = { isDeleted: false };
 
     if (searchLoginTerm) {
       filter.$or = [
@@ -28,14 +29,13 @@ export class UsersQueryRepository {
       filter.$or.push({ email: { $regex: searchEmailTerm, $options: 'i' } })
     }
 
-    const users = await userCollection
+    const users = await usersModel
       .find(filter)
-      .sort(sortBy, sortDirection)
+      .sort({ [sortBy]: sortDirection })
       .skip(paginationSkip(pageNumber, pageSize))
       .limit(pageSize)
-      .toArray()
 
-    const totalCount = await userCollection.countDocuments(filter)
+    const totalCount = await usersModel.countDocuments(filter)
     const pagesCount = Math.ceil(totalCount / pageSize)
 
     return {
@@ -48,7 +48,7 @@ export class UsersQueryRepository {
   }
 
   static async getUserById(userID: string): Promise<OutputUser | null> {
-    const user = await userCollection.findOne({ _id: new ObjectId(userID) })
+    const user = await usersModel.findOne({ _id: new ObjectId(userID) })
 
     if (!user) {
       return null
@@ -58,7 +58,7 @@ export class UsersQueryRepository {
   }
 
   static async getMe(userID: string): Promise<OutputMe | null> {
-    const user = await userCollection.findOne({ _id: new ObjectId(userID) })
+    const user = await usersModel.findOne({ _id: new ObjectId(userID) })
 
     if (!user) {
       return null
@@ -68,13 +68,13 @@ export class UsersQueryRepository {
   }
 
   static async getEmailConfirmationDataByUserId(userId: string): Promise<EmailConfirmation | null> {
-    const user = await userCollection.findOne({ _id: new ObjectId(userId) })
+    const user = await usersModel.findOne({ _id: new ObjectId(userId) })
 
     return user?.emailConfirmation || null
   }
 
   static async getUserByConfirmationCode(confirmationCode: string): Promise<WithId<UserDB> | null> {
-    const user = await userCollection.findOne({ 'emailConfirmation.confirmationCode': confirmationCode })
+    const user = await usersModel.findOne({ 'emailConfirmation.confirmationCode': confirmationCode })
 
     if (!user) {
       return null
@@ -84,7 +84,7 @@ export class UsersQueryRepository {
   }
 
   static async getUserByLoginOrEmail(loginOrEmail: string, email?: string): Promise<ExtendedOutputUser | null> {
-    const user = await userCollection.findOne({
+    const user = await usersModel.findOne({
       $or: [
         { login: { $regex: loginOrEmail, $options: 'i' } },
         { email: { $regex: email || loginOrEmail, $options: 'i' } }
