@@ -8,7 +8,7 @@ import {
   RequestWithQuery,
   RequestWithQueryAndParams
 } from '../models/common'
-import { basicAuthMiddleware, bearerAuthMiddleware } from '../middlewares/auth/auth-middleware'
+import { basicAuthMiddleware, bearerAuthMiddleware, decodeUserIdFromToken } from '../middlewares/auth/auth-middleware'
 import { postsGetValidation, postValidation } from '../validators/posts-validator'
 import { CreateCommentToPost, CreatePost } from '../models/posts/input/create'
 import { UpdatePost } from '../models/posts/input/update'
@@ -38,9 +38,9 @@ postsRouter.get('/:postId', async (req: RequestWithParams<PostId>, res: Response
   }
 })
 
-postsRouter.get('/:postId/comments', commentsByPostIdValidation(), async (req: RequestWithQueryAndParams<PostId, QueryPost>, res: Response) => {
+postsRouter.get('/:postId/comments', commentsByPostIdValidation(), decodeUserIdFromToken, async (req: RequestWithQueryAndParams<PostId, QueryPost>, res: Response) => {
   const query = matchedData(req, { locations: ['query'] }) as QueryComment
-  const postComments = await PostService.getCommentsByPostId(req.params.postId, query)
+  const postComments = await PostService.getCommentsByPostId(query, req.params.postId, req.userId)
 
   if (postComments) {
     res.send(postComments)
@@ -51,15 +51,8 @@ postsRouter.get('/:postId/comments', commentsByPostIdValidation(), async (req: R
 
 postsRouter.post('/:postId/comments', bearerAuthMiddleware, commentToPostValidation(),
   async (req: RequestWithBodyAndParams<PostId, CreateCommentToPost>, res: Response) => {
-    const userId = req.userId
-
-    if (!userId) {
-      res.sendStatus(HTTP_STATUS.UNAUTHORIZED)
-      return
-    }
-
     const commentData = matchedData(req, { locations: ['params', 'body'] }) as CreateCommentToPost & PostId
-    const comment = await PostService.createCommentToPost(commentData, userId)
+    const comment = await PostService.createCommentToPost(commentData, req.userId!)
 
     if (comment) {
       res.status(HTTP_STATUS.CREATED).send(comment)

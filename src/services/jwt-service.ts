@@ -7,7 +7,7 @@ export class JWTService {
     const accessTokenPayload: AccessTokenPayload = payload
 
     return jwt.sign(accessTokenPayload, process.env.JWT_SECRET, {
-        expiresIn: 10000,
+        expiresIn: 15 * 60 * 1000,
         issuer: 'api.blogs.com',
         audience: 'blogs.com',
       }
@@ -15,7 +15,7 @@ export class JWTService {
   }
 
   static async generateRefreshToken(payload: TokenPayload, deviceId?: string) {
-    const expiresInSeconds = 20000
+    const expiresInSeconds = 24 * 60 * 60 * 1000
     const refreshTokenPayload: RefreshTokenPayload = {
       ...payload,
       deviceId: deviceId || uuidv4(),

@@ -2,7 +2,6 @@ import { UpdatePost } from '../models/posts/input/update'
 import { CreateCommentToPost, CreatePost, ExtendedCreatePost } from '../models/posts/input/create'
 import { PostsRepository } from '../repositories/posts-repository'
 import { CreateComment } from '../models/comments/input/create'
-import { CommentatorInfo } from '../models/db/db'
 import { PostId } from '../models/common'
 import { UsersQueryRepository } from '../repositories/query/users-query-repository'
 import { CommentsRepository } from '../repositories/comments-repository'
@@ -23,34 +22,34 @@ export class PostService {
     return null
   }
 
-  static async getCommentsByPostId(postId: string, query: QueryComment): Promise<OutputComments | null> {
+  static async getCommentsByPostId(query: QueryComment, postId: string, userId?: string): Promise<OutputComments | null> {
     const post = await this.getPostById(postId)
 
     if (!post) {
       return null
     }
 
-    return await CommentsQueryRepository.getCommentsByPostId(query, postId)
+    return await CommentsQueryRepository.getCommentsByPostId(query, postId, userId)
   }
 
   static async createCommentToPost(comment: CreateCommentToPost & PostId, userId: string): Promise<OutputComment | null> {
     const post = await PostService.getPostById(comment.postId)
+    const user = await UsersQueryRepository.getUserById(userId)
 
-    if (!post) {
+    if (!post || !user) {
       return null
     }
 
-    const user = await UsersQueryRepository.getUserById(userId)
-    const commentatorInfo: CommentatorInfo = { userId, userLogin: user!.login }
     const newComment: CreateComment = {
       postId: comment.postId,
       content: comment.content,
-      commentatorInfo,
+      commentatorInfo: { userId, userLogin: user.login },
+      likesInfo: { likesCount: 0, dislikesCount: 0 },
       createdAt: new Date().toISOString()
     }
 
     const commentId = await CommentsRepository.createCommentToPost(newComment)
-    return await CommentsQueryRepository.getCommentById(commentId)
+    return await CommentsQueryRepository.getCommentById(commentId, userId)
   }
 
   static async createPost(postData: CreatePost): Promise<OutputPost | null> {

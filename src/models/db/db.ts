@@ -32,6 +32,19 @@ export type CommentDB = {
   postId: string,
   content: string,
   commentatorInfo: CommentatorInfo
+  likesInfo?: LikesInfoDB
+  createdAt: string,
+}
+
+export type LikesInfoDB = {
+  likesCount: number,
+  dislikesCount: number,
+}
+
+export type LikesDB = {
+  userId: string
+  commentId: string
+  myStatus: LikeStatus
   createdAt: string,
 }
 
@@ -55,4 +68,11 @@ export type SessionsDB = {
 export type CommentatorInfo = {
   userId: string,
   userLogin: string
+}
+
+
+export enum LikeStatus {
+  None = 'None',
+  Like = 'Like',
+  Dislike = 'Dislike',
 }

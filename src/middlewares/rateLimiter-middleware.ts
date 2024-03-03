@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express'
-import { RequestLogsRepository } from '../repositories/requestLogs-repository'
+import { RequestLogsRepository } from '../repositories/request-logs-repository'
 import { HTTP_STATUS } from '../constants/httpStatus'
 
 export const rateLimiter = async (req: Request, res: Response, next: NextFunction) => {

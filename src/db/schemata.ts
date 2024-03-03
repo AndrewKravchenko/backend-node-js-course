@@ -1,5 +1,16 @@
 import { Schema } from 'mongoose'
-import { BlogDB, CommentDB, CommentatorInfo, PostDB, RequestLogsDB, SessionsDB, UserDB } from '../models/db/db'
+import {
+  BlogDB,
+  CommentatorInfo,
+  CommentDB,
+  LikesDB,
+  LikesInfoDB,
+  LikeStatus,
+  PostDB,
+  RequestLogsDB,
+  SessionsDB,
+  UserDB
+} from '../models/db/db'
 import { EmailConfirmation, PasswordRecovery } from '../models/users/input/create'
 
 export const blogSchema = new Schema<BlogDB>({
@@ -46,9 +57,23 @@ const commentatorInfoSchema = new Schema<CommentatorInfo>({
   userLogin: { type: String, required: true },
 })
 
+
+export const likesSchema = new Schema<LikesDB>({
+  userId: { type: String, required: true },
+  commentId: { type: String, required: true },
+  myStatus: { type: String, enum: LikeStatus, required: true, default: LikeStatus.None },
+  createdAt: { type: String, required: true },
+})
+
+const likesInfoSchema = new Schema<LikesInfoDB>({
+  likesCount: { type: Number, required: true, default: 0 },
+  dislikesCount: { type: Number, required: true, default: 0 },
+})
+
 export const commentSchema = new Schema<CommentDB>({
   postId: { type: String, required: true },
   content: { type: String, required: true },
+  likesInfo: { type: likesInfoSchema, required: true },
   commentatorInfo: { type: commentatorInfoSchema, required: true },
   createdAt: { type: String, required: true },
 })

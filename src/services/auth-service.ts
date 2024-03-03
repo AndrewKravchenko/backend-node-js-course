@@ -18,7 +18,7 @@ import { UpdateSession } from '../models/sessions/input/update'
 import { add } from 'date-fns/add'
 
 export class AuthService {
-  static async getMe(userId: string | null): Promise<{ code: HTTP_STATUS; data?: OutputMe; }> {
+  static async getMe(userId?: string): Promise<{ code: HTTP_STATUS; data?: OutputMe; }> {
     if (!userId) {
       return { code: HTTP_STATUS.UNAUTHORIZED }
     }

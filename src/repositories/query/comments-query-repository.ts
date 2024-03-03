@@ -1,12 +1,13 @@
 import { commentsModel } from '../../db/db'
 import { ObjectId, WithId } from 'mongodb'
-import { CommentDB } from '../../models/db/db'
+import { CommentDB, LikeStatus } from '../../models/db/db'
 import { OutputComment, OutputComments } from '../../models/comments/output/output'
 import { QueryComment } from '../../models/comments/input/query'
 import { paginationSkip } from '../../utils/queryParams'
+import { LikesService } from '../../services/likes-service'
 
 export class CommentsQueryRepository {
-  static async getCommentsByPostId(query: QueryComment, postId: string): Promise<OutputComments | null> {
+  static async getCommentsByPostId(query: QueryComment, postId: string, userId?: string): Promise<OutputComments | null> {
     const { sortBy, sortDirection, pageNumber, pageSize } = query
 
     const comments = await commentsModel
@@ -27,26 +28,39 @@ export class CommentsQueryRepository {
       page: pageNumber,
       pageSize,
       totalCount,
-      items: comments.map(this.mapDBCommentToCommentOutputModel)
+      items: await Promise.all(comments.map(comment => this.mapDBCommentToCommentOutputModel(comment, userId)))
     }
   }
 
-  static async getCommentById(commentId: string): Promise<OutputComment | null> {
+  static async getCommentById(commentId: string, userId?: string): Promise<OutputComment | null> {
     const comment = await commentsModel.findOne({ _id: new ObjectId(commentId) })
 
     if (!comment) {
       return null
     }
 
-    return this.mapDBCommentToCommentOutputModel(comment)
+    return await this.mapDBCommentToCommentOutputModel(comment, userId)
   }
 
-  static mapDBCommentToCommentOutputModel(dbComment: WithId<CommentDB>): OutputComment {
-    return {
-      id: dbComment._id.toString(),
+  static async mapDBCommentToCommentOutputModel(dbComment: WithId<CommentDB>, userId?: string): Promise<OutputComment> {
+    const commentId = dbComment._id.toString()
+    const comment: OutputComment = {
+      id: commentId,
       content: dbComment.content,
-      commentatorInfo: dbComment.commentatorInfo,
+      commentatorInfo: { userId: dbComment.commentatorInfo.userId, userLogin: dbComment.commentatorInfo.userLogin },
       createdAt: dbComment.createdAt,
     }
+
+    if (dbComment.likesInfo) {
+      const { likesCount, dislikesCount } = dbComment.likesInfo
+      const myStatus = userId && await LikesService.getLikeStatusByCommentId(commentId, userId)
+      comment.likesInfo = {
+        likesCount,
+        dislikesCount,
+        myStatus: myStatus || LikeStatus.None
+      }
+    }
+
+    return comment
   }
 }

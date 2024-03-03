@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import { HTTP_STATUS } from '../../constants/httpStatus'
 import { JWTService } from '../../services/jwt-service'
+import { ObjectId } from 'mongodb'
 
 export const basicAuthMiddleware = (req: Request, res: Response, next: NextFunction) => {
   const auth = req.headers.authorization
@@ -29,21 +30,30 @@ export const basicAuthMiddleware = (req: Request, res: Response, next: NextFunct
 }
 
 export const bearerAuthMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  decodeUserIdFromToken(req, res, () => {
+    if (req.userId) {
+      next()
+    } else {
+      res.sendStatus(HTTP_STATUS.UNAUTHORIZED)
+      return
+    }
+  })
+}
+
+export const decodeUserIdFromToken = (req: Request<{}, {}, {}, any>, res: Response, next: NextFunction) => {
   const auth = req.headers.authorization
 
   if (!auth) {
-    res.sendStatus(HTTP_STATUS.UNAUTHORIZED)
+    next()
     return
   }
 
   const token = auth.split(' ')[1]
-  const accessTokenPayload = JWTService.verifyToken(token)
+  const { userId } = JWTService.verifyToken(token) || {}
 
-  if (accessTokenPayload?.userId) {
-    req.userId = accessTokenPayload.userId
-    return next()
+  if (userId && ObjectId.isValid(userId)) {
+    req.userId = userId
   }
 
-  res.sendStatus(HTTP_STATUS.UNAUTHORIZED)
-  return
+  next()
 }
