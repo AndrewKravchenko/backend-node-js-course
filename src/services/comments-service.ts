@@ -4,7 +4,6 @@ import { CommentsQueryRepository } from '../repositories/query/comments-query-re
 import { OutputComment } from '../models/comments/output/output'
 import { LikeStatus } from '../models/db/db'
 import { LikesService } from './likes-service'
-import { UpdateLikesCount } from '../models/likes/input/update'
 import { Result, ResultCode } from '../types/resultLayer'
 
 export class CommentsService {
@@ -27,7 +26,7 @@ export class CommentsService {
       return { resultCode: ResultCode.NotFound }
     }
 
-    const currentLikeStatus = await LikesService.getLikeStatusByCommentId(commentId, userId)
+    const currentLikeStatus = await LikesService.getCommentLikeStatus(commentId, userId)
 
     if (currentLikeStatus === newLikeStatus) {
       return { resultCode: ResultCode.Success }
@@ -45,41 +44,12 @@ export class CommentsService {
   }
 
   static async updateLikesCount(commentId: string, currentLikeStatus: LikeStatus, newLikeStatus: LikeStatus): Promise<boolean> {
-    const likesCountUpdate = this.calculateLikesCountChanges(currentLikeStatus, newLikeStatus)
+    const likesCountUpdate = LikesService.calculateLikesCountChanges(currentLikeStatus, newLikeStatus)
 
     return await CommentsRepository.updateLikesCount(commentId, likesCountUpdate)
   }
 
   static async deleteComment(commentId: string): Promise<boolean> {
     return await CommentsRepository.deleteComment(commentId)
-  }
-
-  static calculateLikesCountChanges(currentLikeStatus: LikeStatus, newLikeStatus: LikeStatus): Record<string, number> {
-    const likeCountUpdate: UpdateLikesCount = {}
-
-    switch (`${currentLikeStatus}-${newLikeStatus}`) {
-      case `${LikeStatus.None}-${LikeStatus.Like}`:
-        likeCountUpdate.likesCount = 1
-        break
-      case `${LikeStatus.None}-${LikeStatus.Dislike}`:
-        likeCountUpdate.dislikesCount = 1
-        break
-      case `${LikeStatus.Like}-${LikeStatus.Dislike}`:
-        likeCountUpdate.likesCount = -1
-        likeCountUpdate.dislikesCount = 1
-        break
-      case `${LikeStatus.Like}-${LikeStatus.None}`:
-        likeCountUpdate.likesCount = -1
-        break
-      case `${LikeStatus.Dislike}-${LikeStatus.Like}`:
-        likeCountUpdate.dislikesCount = -1
-        likeCountUpdate.likesCount = 1
-        break
-      case `${LikeStatus.Dislike}-${LikeStatus.None}`:
-        likeCountUpdate.dislikesCount = -1
-        break
-    }
-
-    return likeCountUpdate
   }
 }

@@ -1,25 +1,17 @@
 import { inputValidation } from '../middlewares/input-model-validation/input-validation'
 import { validateBodyString } from '../utils/validator'
 import { commonQueryValidation } from './common'
-import { postsSortByQueryValidation } from './posts-validator'
-import { body, param } from 'express-validator'
+import { postIdParamValidation, postsSortByQueryValidation } from './posts-validator'
+import { param } from 'express-validator'
 import { queryValidation } from '../middlewares/input-model-validation/query-validation'
-import { LikeStatus } from '../models/db/db'
+import { likeStatusValidation } from './likes-validator'
 
 const contentValidation = validateBodyString('content', 20, 300)
   .withMessage('Incorrect content!')
 
-const postIdParamValidation = param('postId')
-  .isMongoId()
-  .withMessage('Incorrect postId!')
-
 const commentIdParamValidation = param('commentId')
   .isMongoId()
   .withMessage('Incorrect commentId!')
-
-const likeStatusValidation = body('likeStatus')
-  .isIn(Object.values(LikeStatus))
-  .withMessage('Incorrect likeStatus!')
 
 
 export const updateCommentValidation = () => [

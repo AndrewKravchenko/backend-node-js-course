@@ -5,7 +5,7 @@ import { UserDB } from '../models/db/db'
 
 export class UsersRepository {
   static async getUserByPasswordRecoveryCode(code: string): Promise<WithId<UserDB> | null> {
-    const user = await usersModel.findOne({ 'passwordRecovery.code': code })
+    const user = await usersModel.findOne({ 'passwordRecovery.code': code }).lean()
 
     if (!user) {
       return null

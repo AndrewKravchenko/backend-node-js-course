@@ -91,6 +91,7 @@ class Database {
       await this.commentsModel.deleteMany({})
       await this.sessionsModel.deleteMany({})
       await this.requestLogsModel.deleteMany({})
+      await this.likesModel.deleteMany({})
     } catch (error) {
       console.error('Error in dropping the database:', error)
       await this.close()

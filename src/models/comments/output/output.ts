@@ -1,5 +1,6 @@
-import { CommentatorInfo, LikeStatus } from '../../db/db'
+import { CommentatorInfo } from '../../db/db'
 import { PaginatedData } from '../../common'
+import { LikesInfoOutput } from '../../likes/output/output'
 
 export type OutputComments = PaginatedData<OutputComment>
 
@@ -9,10 +10,4 @@ export type OutputComment = {
   commentatorInfo: CommentatorInfo,
   likesInfo?: LikesInfoOutput,
   createdAt: string,
-}
-
-export type LikesInfoOutput = {
-  myStatus: LikeStatus,
-  likesCount: number,
-  dislikesCount: number,
 }

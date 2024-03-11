@@ -14,6 +14,7 @@ export type PostDB = {
   content: string,
   blogId: string,
   blogName: string,
+  extendedLikesInfo: LikesCountDB
   createdAt: string,
 }
 
@@ -32,18 +33,25 @@ export type CommentDB = {
   postId: string,
   content: string,
   commentatorInfo: CommentatorInfo
-  likesInfo?: LikesInfoDB
+  likesInfo?: LikesCountDB
   createdAt: string,
 }
 
-export type LikesInfoDB = {
+export type LikesCountDB = {
   likesCount: number,
   dislikesCount: number,
 }
 
+export type NewestLikesDB = {
+  userId: string
+  login: string
+  addedAt: string
+}
+
 export type LikesDB = {
   userId: string
-  commentId: string
+  commentId?: string
+  postId?: string
   myStatus: LikeStatus
   createdAt: string,
 }

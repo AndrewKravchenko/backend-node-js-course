@@ -8,7 +8,7 @@ import {
   RequestWithQueryAndParams
 } from '../models/common'
 import { HTTP_STATUS } from '../constants/httpStatus'
-import { basicAuthMiddleware } from '../middlewares/auth/auth-middleware'
+import { basicAuthMiddleware, decodeUserIdFromToken } from '../middlewares/auth/auth-middleware'
 import { blogsValidation, blogValidation, postsByBlogIdValidation } from '../validators/blogs-validator'
 import { CreateBlog, CreatePostToBlog } from '../models/blogs/input/create'
 import { UpdateBlog } from '../models/blogs/input/update'
@@ -37,10 +37,10 @@ blogsRouter.get('/:blogId', async (req: RequestWithParams<BlogId>, res: Response
   }
 })
 
-blogsRouter.get('/:blogId/posts', postsByBlogIdValidation(),
+blogsRouter.get('/:blogId/posts', postsByBlogIdValidation(), decodeUserIdFromToken,
   async (req: RequestWithQueryAndParams<BlogId, Partial<QueryPostByBlogId>>, res: Response) => {
     const query = matchedData(req, { locations: ['query'] }) as QueryPostByBlogId
-    const posts = await BlogService.getPostsByBlogId(req.params.blogId, query)
+    const posts = await BlogService.getPostsByBlogId(req.params.blogId, query, req.userId)
 
     if (posts) {
       res.send(posts)

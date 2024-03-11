@@ -9,27 +9,28 @@ import {
   RequestWithQueryAndParams
 } from '../models/common'
 import { basicAuthMiddleware, bearerAuthMiddleware, decodeUserIdFromToken } from '../middlewares/auth/auth-middleware'
-import { postsGetValidation, postValidation } from '../validators/posts-validator'
+import { createPostLikeValidation, postsGetValidation, postValidation } from '../validators/posts-validator'
 import { CreateCommentToPost, CreatePost } from '../models/posts/input/create'
 import { UpdatePost } from '../models/posts/input/update'
-import { QueryPost } from '../models/posts/input/query'
-import { PostsQueryRepository } from '../repositories/query/posts-query-repository'
+import { PostQuery } from '../models/posts/input/query'
 import { matchedData } from 'express-validator'
 import { PostService } from '../services/posts-service'
 import { QueryComment } from '../models/comments/input/query'
 import { commentsByPostIdValidation, commentToPostValidation } from '../validators/comments-validator'
+import { CreateLikeReq } from '../models/likes/input/create'
+import { ResultCode } from '../types/resultLayer'
 
 export const postsRouter = Router({})
 
-postsRouter.get('/', postsGetValidation(), async (req: RequestWithQuery<Partial<QueryPost>>, res: Response) => {
-  const query = matchedData(req, { locations: ['query'] }) as QueryPost
-  const posts = await PostsQueryRepository.getPosts(query)
+postsRouter.get('/', postsGetValidation(), decodeUserIdFromToken, async (req: RequestWithQuery<Partial<PostQuery>>, res: Response) => {
+  const query = matchedData(req, { locations: ['query'] }) as PostQuery
+  const posts = await PostService.getPosts(query, req.userId)
 
   res.send(posts)
 })
 
-postsRouter.get('/:postId', async (req: RequestWithParams<PostId>, res: Response) => {
-  const post = await PostService.getPostById(req.params.postId)
+postsRouter.get('/:postId', decodeUserIdFromToken, async (req: RequestWithParams<PostId>, res: Response) => {
+  const post = await PostService.getPostById(req.params.postId, req.userId)
 
   if (post) {
     res.send(post)
@@ -38,7 +39,7 @@ postsRouter.get('/:postId', async (req: RequestWithParams<PostId>, res: Response
   }
 })
 
-postsRouter.get('/:postId/comments', commentsByPostIdValidation(), decodeUserIdFromToken, async (req: RequestWithQueryAndParams<PostId, QueryPost>, res: Response) => {
+postsRouter.get('/:postId/comments', commentsByPostIdValidation(), decodeUserIdFromToken, async (req: RequestWithQueryAndParams<PostId, PostQuery>, res: Response) => {
   const query = matchedData(req, { locations: ['query'] }) as QueryComment
   const postComments = await PostService.getCommentsByPostId(query, req.params.postId, req.userId)
 
@@ -82,6 +83,18 @@ postsRouter.put('/:postId', basicAuthMiddleware, postValidation(), async (req: R
     res.sendStatus(HTTP_STATUS.NOT_FOUND)
   }
 })
+
+postsRouter.put('/:postId/like-status', bearerAuthMiddleware, createPostLikeValidation(),
+  async (req: RequestWithBodyAndParams<PostId, CreateLikeReq>, res: Response) => {
+    const { likeStatus, postId } = matchedData(req) as CreateLikeReq & PostId
+    const { resultCode } = await PostService.updateLikeStatus(req.userId!, postId, likeStatus)
+
+    if (resultCode === ResultCode.Success) {
+      res.send(HTTP_STATUS.NO_CONTENT)
+    } else {
+      res.sendStatus(HTTP_STATUS.NOT_FOUND)
+    }
+  })
 
 postsRouter.delete('/:postId', basicAuthMiddleware, async (req: RequestWithParams<PostId>, res: Response) => {
   const isDeleted = await PostService.deletePost(req.params.postId)

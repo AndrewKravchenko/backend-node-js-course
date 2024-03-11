@@ -4,9 +4,16 @@ export type CreateLikeReq = {
   likeStatus: LikeStatus,
 }
 
-export type CreateLike = {
+export type CreateCommentLike = {
   userId: string
   commentId: string
+  myStatus: LikeStatus
+  createdAt: string,
+}
+
+export type CreatePostLike = {
+  userId: string
+  postId: string
   myStatus: LikeStatus
   createdAt: string,
 }

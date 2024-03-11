@@ -3,8 +3,8 @@ import {
   BlogDB,
   CommentatorInfo,
   CommentDB,
+  LikesCountDB,
   LikesDB,
-  LikesInfoDB,
   LikeStatus,
   PostDB,
   RequestLogsDB,
@@ -21,12 +21,18 @@ export const blogSchema = new Schema<BlogDB>({
   isMembership: { type: Boolean, required: true },
 })
 
+const likesCountSchema = new Schema<LikesCountDB>({
+  likesCount: { type: Number, required: true, default: 0 },
+  dislikesCount: { type: Number, required: true, default: 0 },
+})
+
 export const postSchema = new Schema<PostDB>({
   title: { type: String, required: true },
   shortDescription: { type: String, required: true },
   content: { type: String, required: true },
   blogId: { type: String, required: true },
   blogName: { type: String, required: true },
+  extendedLikesInfo: { type: likesCountSchema, required: true },
   createdAt: { type: String, required: true },
 })
 
@@ -57,23 +63,18 @@ const commentatorInfoSchema = new Schema<CommentatorInfo>({
   userLogin: { type: String, required: true },
 })
 
-
 export const likesSchema = new Schema<LikesDB>({
   userId: { type: String, required: true },
-  commentId: { type: String, required: true },
+  commentId: { type: String },
+  postId: { type: String },
   myStatus: { type: String, enum: LikeStatus, required: true, default: LikeStatus.None },
   createdAt: { type: String, required: true },
-})
-
-const likesInfoSchema = new Schema<LikesInfoDB>({
-  likesCount: { type: Number, required: true, default: 0 },
-  dislikesCount: { type: Number, required: true, default: 0 },
 })
 
 export const commentSchema = new Schema<CommentDB>({
   postId: { type: String, required: true },
   content: { type: String, required: true },
-  likesInfo: { type: likesInfoSchema, required: true },
+  likesInfo: { type: likesCountSchema, required: true },
   commentatorInfo: { type: commentatorInfoSchema, required: true },
   createdAt: { type: String, required: true },
 })

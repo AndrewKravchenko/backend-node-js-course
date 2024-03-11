@@ -2,7 +2,7 @@ import { blogsModel, postsModel } from '../../db/db'
 import { OutputBlog, OutputBlogs } from '../../models/blogs/output/output'
 import { ObjectId, WithId } from 'mongodb'
 import { QueryBlog, QueryPostByBlogId } from '../../models/blogs/input/query'
-import { OutputPosts } from '../../models/posts/output/output'
+import { OutputPostsDB } from '../../models/posts/output/output'
 import { paginationSkip } from '../../utils/queryParams'
 import { BlogDB } from '../../models/db/db'
 import { PostsQueryRepository } from './posts-query-repository'
@@ -49,7 +49,7 @@ export class BlogsQueryRepository {
     return this.mapDBBlogToBlogOutputModel(blog)
   }
 
-  static async getPostsByBlogId(blogId: string, query: QueryPostByBlogId): Promise<OutputPosts> {
+  static async getPostsByBlogId(blogId: string, query: QueryPostByBlogId): Promise<OutputPostsDB> {
     const { sortBy, sortDirection, pageNumber, pageSize } = query
 
     const posts = await postsModel

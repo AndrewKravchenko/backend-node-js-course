@@ -53,7 +53,7 @@ export class CommentsQueryRepository {
 
     if (dbComment.likesInfo) {
       const { likesCount, dislikesCount } = dbComment.likesInfo
-      const myStatus = userId && await LikesService.getLikeStatusByCommentId(commentId, userId)
+      const myStatus = userId && await LikesService.getCommentLikeStatus(commentId, userId)
       comment.likesInfo = {
         likesCount,
         dislikesCount,

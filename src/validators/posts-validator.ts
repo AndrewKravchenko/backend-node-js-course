@@ -3,6 +3,11 @@ import { inputValidation } from '../middlewares/input-model-validation/input-val
 import { validateBodyString } from '../utils/validator'
 import { commonQueryValidation } from './common'
 import { CommentsSortOptions } from '../models/comments/input/query'
+import { likeStatusValidation } from './likes-validator'
+
+export const postIdParamValidation = param('postId')
+  .isMongoId()
+  .withMessage('Incorrect postId!')
 
 const titleValidation = validateBodyString('title', 1, 30)
   .withMessage('Incorrect title!')
@@ -24,6 +29,12 @@ const commentsSortOptions: CommentsSortOptions[] = ['content', 'createdAt']
 export const postsSortByQueryValidation = query('sortBy')
   .if(query('sortBy').not().isIn(commentsSortOptions))
   .customSanitizer(() => 'createdAt')
+
+export const createPostLikeValidation = () => [
+  postIdParamValidation,
+  likeStatusValidation,
+  inputValidation
+]
 
 export const postsGetValidation = () => [
   postsSortByQueryValidation,

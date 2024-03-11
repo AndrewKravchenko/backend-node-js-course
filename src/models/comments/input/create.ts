@@ -1,14 +1,9 @@
-import { CommentatorInfo } from '../../db/db'
+import { CommentatorInfo, LikesCountDB } from '../../db/db'
 
 export type CreateComment = {
   postId : string,
   content: string,
-  likesInfo: LikesInfo,
+  likesInfo: LikesCountDB,
   commentatorInfo: CommentatorInfo,
   createdAt: string,
-}
-
-type LikesInfo = {
-  likesCount: number,
-  dislikesCount: number,
 }

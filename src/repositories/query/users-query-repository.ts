@@ -48,7 +48,7 @@ export class UsersQueryRepository {
   }
 
   static async getUserById(userID: string): Promise<OutputUser | null> {
-    const user = await usersModel.findOne({ _id: new ObjectId(userID) })
+    const user = await usersModel.findOne({ _id: new ObjectId(userID) }).lean()
 
     if (!user) {
       return null
